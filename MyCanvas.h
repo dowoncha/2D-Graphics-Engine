@@ -21,6 +21,7 @@
 #include "GColor.h"
 #include "GRect.h"
 #include "GEdge.h"
+#include "GMatrix.h"
 
 #define GETA(a)    		  GPixel_GetA(a)
 #define GETR(a)    		  GPixel_GetR(a)
@@ -83,6 +84,8 @@ public:
    */
 	void concat(const float matrix[6]) override;
 
+	void TransformPoints(const std::vector<GPoint>& Points, std::vector<GPoint>& Transformed);
+
 	/* Multiply Divide multiply again by 255 and round 2 Colors into another*/
   unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);
 
@@ -116,4 +119,6 @@ public:
 private:
 	const GBitmap Bitmap;
 	const GIRect BmpRect;
+	GMatrix<float>* CTM;
+	GMatrix<float>* Save;
 };

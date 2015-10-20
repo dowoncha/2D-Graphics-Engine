@@ -7,7 +7,9 @@ MyCanvas::MyCanvas(const GBitmap& bitmap):
 	Bitmap(bitmap),
 	BmpRect(GIRect::MakeWH(bitmap.width(), bitmap.height()))
 {
-		std::cout << "Bmp W: " << bitmap.width() << " H: " << bitmap.height() << "\n\n";
+		std::cout << "Bmp W: " << bitmap.width() << " H: " << bitmap.height() << "\n";
+		std::vector<float> Identity{1, 0, 0, 0, 1, 0, 0, 0, 1};
+		CTM = new GMatrix<float>(3, 3, Identity);
 }
 
 MyCanvas::~MyCanvas() {	}
@@ -164,17 +166,21 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const G
       return;
     }
 
+	std::vector<GPoint> Transformed;
+
 	/* Convert the color into pixel data*/
 	const GPixel& pColor = ColorToPixel(color);
 
 	/* Declare a vector of the points*/
 	std::vector<GPoint> vPoints(Points, Points + count);
 
+	TransformPoints(vPoints, Transformed);
+
 	/* Sort the given points into the vector into line adjacent pieces */
-	SortPointsForConvex(vPoints);
+	SortPointsForConvex(Transformed);
 
 	/* Make convex edges from the sorted points Edges come out pre vertical clipped*/
-	auto Edges = MakeConvexEdges(vPoints);
+	auto Edges = MakeConvexEdges(Transformed);
 
 	std::vector<GEdge> NewEdges;
 	/* Clip top and bot */
@@ -191,24 +197,35 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const G
 	DrawPolygon(Edges, pColor);
 }
 
-void save()
+void MyCanvas::save()
 {
-
+	Save = CTM;
 }
 
-void restore()
+void MyCanvas::restore()
 {
-
+	CTM = Save;
 }
 
-void concat(const float matrix[6])
+void MyCanvas::concat(const float matrix[6])
 {
-	/* Convert input matrix into a 3x3*/
-	std::array<float, 9> ConcatMat {
+	std::vector<float> Concat{
 		matrix[0], matrix[1], matrix[2],
 		matrix[3], matrix[4], matrix[5],
 		0, 0, 1
 	};
+
+	(*CTM) *= GMatrix<float>(3, 3, Concat);
+}
+
+void MyCanvas::TransformPoints(const std::vector<GPoint>& Points, std::vector<GPoint>& Transformed)
+{
+	for (auto &Point: Points)
+	{
+		auto NewX = GMatrix<float>::DotProduct(CTM->GetRow(0), {Point.x(), Point.y(), 1});
+		auto NewY = GMatrix<float>::DotProduct(CTM->GetRow(1), {Point.x(), Point.y(), 1});
+		Transformed.emplace_back(GPoint::Make(NewX, NewY));
+	}
 }
 
 void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
