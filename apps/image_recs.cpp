@@ -29,7 +29,7 @@ static void draw_solid_ramp(GCanvas* canvas) {
         { GColor::MakeARGB(1,   c,   c,   0), GColor::MakeARGB(0,  d,  d,  0) },   // yellow
     };
 
-    
+
     for (int y = 0; y < GARRAY_COUNT(rec); ++y) {
         GColor color = rec[y].fC0;
         GColor delta = rec[y].fDC;
@@ -92,7 +92,7 @@ static void draw_spocks_quad(GCanvas* canvas) {
 
 static void draw_spocks_zoom(GCanvas* canvas) {
     const int N = 300;
-    
+
     GBitmap tex;
     tex.readFromFile("apps/spock.png");
 
@@ -107,7 +107,7 @@ static const float gScaleUnitToByte = 255.99999f;
 
 static GPixel pin_and_premul_to_pixel(GColor c) {
     c = c.pinToUnit();
-    
+
     float a = c.fA * gScaleUnitToByte;
     int ia = (int)a;
     int ir = (int)(a * c.fR);
@@ -118,12 +118,12 @@ static GPixel pin_and_premul_to_pixel(GColor c) {
 
 static void make_circle(const GBitmap& bitmap, const GColor& color) {
     const GPixel px = pin_and_premul_to_pixel(color);
-    
+
     const float cx = (float)bitmap.width() / 2;
     const float cy = (float)bitmap.height() / 2;
     const float radius = cx - 1;
     const float radius2 = radius * radius;
-    
+
     GPixel* dst = bitmap.pixels();
     for (int y = 0; y < bitmap.height(); ++y) {
         const float dy = y - cy;
@@ -139,7 +139,10 @@ static void make_circle(const GBitmap& bitmap, const GColor& color) {
         dst = (GPixel*)((char*)dst + bitmap.rowBytes());
     }
 }
-
+/**
+ * 	We pass in two iterators to containers, and then an initial variable of the container
+ * for its type.
+ * */
 class AutoBitmap : public GBitmap {
 public:
     AutoBitmap(int width, int height) {
@@ -227,7 +230,7 @@ static void draw_tri_clipped(GCanvas* canvas) {
 static void make_regular_poly(GPoint pts[], int count, float cx, float cy, float radius) {
     float angle = 0;
     const float deltaAngle = M_PI * 2 / count;
-    
+
     for (int i = 0; i < count; ++i) {
         pts[i].set(cx + cos(angle) * radius, cy + sin(angle) * radius);
         angle += deltaAngle;
@@ -265,7 +268,7 @@ static GPoint scale(GPoint vec, float size) {
 
 static void draw_line(GCanvas* canvas, GPoint a, GPoint b, float width, const GColor& color) {
     GPoint norm = scale(GPoint::Make(b.fY - a.fY, a.fX - b.fX), width/2);
-    
+
     GPoint pts[4];
     pts[0] = GPoint::Make(a.fX + norm.fX, a.fY + norm.fY);
     pts[1] = GPoint::Make(b.fX + norm.fX, b.fY + norm.fY);
@@ -283,7 +286,7 @@ static void draw_poly_rotate(GCanvas* canvas) {
     GColor color = GColor::MakeARGB(1, 1, 0, 0);
     const float deltaR = -1.0 / N;
     const float deltaB = 1.0 / N;
-    
+
     const float width = 10;
 
     for (float angle = 0; angle <= M_PI/2; angle += M_PI/2/N) {
