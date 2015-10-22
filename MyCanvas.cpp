@@ -200,33 +200,37 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 	if (!rounded.intersect(BmpRect)) 			//If the rounded rectangle does not intersect the bitmap
 		return;
 
+	float FX = src.width() / dst.width();
+	float FY = src.width() / dst.width();
+
 	/* Need to get the pixel addresses for src and output bitmaps for both */
 	GPixel *_SrcPixels = src.pixels();
 	GPixel *_DstPixels = Bitmap.pixels();
 
-	auto InverseMat = BmpToRectMat.inverse().concat(MatrixStack.top().inverse());
+	auto Inverse = BmpToRectMat.GetInverse();
+	Inverse.concat(MatrixStack.top().GetInverse());
 
 	/* Need to offset the Dst Pixels by the number of rows in rounded */
 	_DstPixels = (GPixel*)((char*)_DstPixels + Bitmap.rowBytes() * rounded.top());
 
-	float srcY = .5 * FY;		//This is the middle of the pixel in the layer first row
-	for (int y = rounded.top(); y < rounded.bottom(); ++y, srcY += FY)
-	  {
-		float srcX =  .5 * FX;
-		/* Need this to get the GPixel row from the src */
-		GPixel* _src = (GPixel*)((char*)_SrcPixels + src.rowBytes() * (int)srcY);
-		for (int x = rounded.left(); x < rounded.right(); ++x, srcX += FX)
-		{
-			/* skip any out of bound pixels*/
-			if ( x < 0 || y < 0 || x > BmpRect.width() || y > BmpRect.height())
-				continue;
-
-			GPixel SrcPixel = _src[(int)srcX]; 			//Find the pixel in the src bitmap
-			_DstPixels[x] = Blend(SrcPixel, _DstPixels[x]);		//Write to dst bitmap
-		}
-
-		_DstPixels = (GPixel*)((char*)_DstPixels + Bitmap.rowBytes());	//Offset dst bitmap to next row
-	  }
+	// float srcY = .5 * FY;		//This is the middle of the pixel in the layer first row
+	// for (int y = rounded.top(); y < rounded.bottom(); ++y, srcY += FY)
+	//   {
+	// 	float srcX =  .5 * FX;
+	// 	/* Need this to get the GPixel row from the src */
+	// 	GPixel* _src = (GPixel*)((char*)_SrcPixels + src.rowBytes() * (int)srcY);
+	// 	for (int x = rounded.left(); x < rounded.right(); ++x, srcX += FX)
+	// 	{
+	// 		/* skip any out of bound pixels*/
+	// 		if ( x < 0 || y < 0 || x > BmpRect.width() || y > BmpRect.height())
+	// 			continue;
+	//
+	// 		GPixel SrcPixel = _src[(int)srcX]; 			//Find the pixel in the src bitmap
+	// 		_DstPixels[x] = Blend(SrcPixel, _DstPixels[x]);		//Write to dst bitmap
+	// 	}
+	//
+	// 	_DstPixels = (GPixel*)((char*)_DstPixels + Bitmap.rowBytes());	//Offset dst bitmap to next row
+	//   }
 }
 
 void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const GColor& color)
@@ -234,18 +238,19 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const G
 	assert(count > 2);
 
 	/* Declare a vector of the points*/
-	auto Transformed = CTMPoints(std::vector<GPoint>(Points, Points + count));
+	std::vector<GPoint> Transformed(Points, Points + count);
+	CTMPoints(Transformed);
 
 	fillDevicePolygon(Transformed, color);
 }
 
 /* The points coming in should already be in device space */
-void MyCanvas::fillDeviceBitmap(const GBitmap& src, const std::vector<GPoint>& Points, GMatrix3x3f& InverseRect)
+void MyCanvas::fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix3x3f& InverseRect)
 {
 		/* Sort the points for convex edge creation */
 		SortPointsForConvex(Points);
 		/* Create Edges from the sorted points*/
-		auto Edges = MakeConvexEdges();
+		auto Edges = MakeConvexEdges(Points);
 		/* Clip the Edges from the current bitmap */
 		ClipEdges(Edges);
 
@@ -253,16 +258,15 @@ void MyCanvas::fillDeviceBitmap(const GBitmap& src, const std::vector<GPoint>& P
 }
 
 /* Points should be pre transformed when coming in*/
-void MyCanvas::fillDevicePolygon(const std::vector<GPoint>& Points, const GColor& color)
+void MyCanvas::fillDevicePolygon(std::vector<GPoint> Points, const GColor& color)
 {
 	assert(Points.size() > 2);
-
 	/* Convert the color into pixel data*/
-	const GPixel& pColor = ColorToPixel(color
+	const GPixel& pColor = ColorToPixel(color);
 	/* Sort the given points into the vector into line adjacent pieces */
-	SortPointsForConvex(Transformed);
+	SortPointsForConvex(Points);
 	/* Make convex edges from the sorted points Edges come out pre vertical clipped*/
-	auto Edges = MakeConvexEdges(Transformed);
+	auto Edges = MakeConvexEdges(Points);
 	/* Clip the Edges from the output bitmap*/
 	ClipEdges(Edges);
 	/* Draw the polgyon from the set of edges and the color*/
@@ -454,7 +458,7 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
 	}
 }
 
-void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GPixel& Color, const GMatrix3x3f& InverseRect)
+void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect)
 {
 	if (Edges.size() < 2)
 	{
@@ -480,7 +484,7 @@ void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GPixel& Color,
 		/* Round the beginning of current x for each scanline draw*/
 		for ( float x = LeftEdge.GetCurrentX() + .5; x < RightEdge.GetCurrentX(); x += 1.0f)
 		{
-			DstPixels[(int)x] = Blend(Color, DstPixels[(int)x]);
+			DstPixels[(int)x] = 0;
 		}
 
 		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
@@ -550,26 +554,26 @@ void MyCanvas::DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color)
 	}
 }
 
-void MyCanvas::CheckEdgeValues(const std::vector<GEdge>& Edges)
-{
-  for (const auto Edge: Edges)
-    {
-      if (Edge.GetTop() < 0 || Edge.GetBottom() < 0)
-	{
-	  std::cout << "Top or Bot is above bitmap " << Edge.ToString();
-	}
-      if (Edge.GetTop() > BmpRect.height() || Edge.GetBottom() > BmpRect.height())
-	{
-	  std::cout <<"Top or Bot is below the bitmap " << Edge.ToString();
-	}
-      if (Edge.GetCurrentX() < 0 || Edge.GetBottomX() < 0)
-	{
-	  std::cout << "Left Clip failure detected "  << Edge.ToString();
-	}
-      if (Edge.GetCurrentX() > BmpRect.width() || Edge.GetBottomX() > BmpRect.width())
-	{
-	  std::cout << "Right clip failure " << Edge.ToString();
-	}
-
-    }
-}
+// void MyCanvas::CheckEdgeValues(const std::vector<GEdge>& Edges)
+// {
+//   for (const auto Edge: Edges)
+//     {
+//       if (Edge.GetTop() < 0 || Edge.GetBottom() < 0)
+// 	{
+// 	  std::cout << "Top or Bot is above bitmap " << Edge.ToString();
+// 	}
+//       if (Edge.GetTop() > BmpRect.height() || Edge.GetBottom() > BmpRect.height())
+// 	{
+// 	  std::cout <<"Top or Bot is below the bitmap " << Edge.ToString();
+// 	}
+//       if (Edge.GetCurrentX() < 0 || Edge.GetBottomX() < 0)
+// 	{
+// 	  std::cout << "Left Clip failure detected "  << Edge.ToString();
+// 	}
+//       if (Edge.GetCurrentX() > BmpRect.width() || Edge.GetBottomX() > BmpRect.width())
+// 	{
+// 	  std::cout << "Right clip failure " << Edge.ToString();
+// 	}
+//
+//     }
+// }

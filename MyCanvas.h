@@ -57,7 +57,7 @@ public:
 	 * */
 	void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
 
-	void fillDeviceBitmap(const GBitmap& src, const std::vector<GPoint>& Points, const GMatrix3x3f& InverseRect);
+	void fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix3x3f& InverseRect);
 
 	/**
    *  Fill the convex polygon with the color, following the same "containment" rule as
@@ -67,7 +67,7 @@ public:
    **/
 	void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
 	/* My Fill convex using a vector*/
-	void fillDevicePolygon(const std::vector<GPoint>& Points, const GColor& color);
+	void fillDevicePolygon(std::vector<GPoint> Points, const GColor& color);
 	/**
    *  Saves a copy of the CTM, allowing subsequent modifications (by calling concat()) to be
    *  undone when restore() is called.
@@ -103,12 +103,14 @@ public:
 	 * The Edges should make a convex shape from top down */
 	std::vector<GEdge> MakeConvexEdges(const std::vector<GPoint>& Points);
 
+	void ClipEdges(std::vector<GEdge>& Edges);
+
 	/* Any edge with a point outside the bitmap width is now pinned and a in bound edge is now created */
 	void ClipEdgesTopAndBottom(std::vector<GEdge>& Edges);
 	void ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
 	void ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
 
-	void DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src);
+	void DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect);
 	/* Draw the polygon using the container of edges to the input color*/
 	void DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color);
 private:
