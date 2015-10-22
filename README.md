@@ -15,3 +15,6 @@ PA5:
 PA4:
   Finish up FillBitmapRect
   
+Build commands:
+./image --expected expected --diff dirname
+./image --verbose
