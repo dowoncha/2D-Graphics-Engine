@@ -1,31 +1,31 @@
 #include "GMatrix.h"
 
+/* Initialize rows and cols that are input, Set default value to row x cols*/
 template<typename T>
 GMatrix<T>::GMatrix(unsigned rows, unsigned cols)
   : nRows(rows), nCols(cols), Matrix(rows * cols, T(0.0))
 {
-  std::cout << "Matrix created with size: " << Matrix.size() + '\n';
 }
 
 template<typename T>
-GMatrix<T>::GMatrix(unsigned rows, unsigned cols, const std::vector<T> values)
-  : nRows(rows), nCols(cols), Matrix(std::move(values))
-  {
-  }
-
-template<typename T>
-GMatrix<T>& GMatrix<T>::operator=(const GMatrix<T>& a)
+GMatrix<T>::GMatrix(unsigned rows, unsigned cols, std::initializer_list<T> Elements)
+  : nRows(rows), nCols(cols), Matrix(Elements)
 {
-  if (this != &a)
-  {
-    nRows = a.NumRows();
-    nCols = a.NumCols();
-    Matrix = a.Data();
-  }
-
-  return *this;
 }
 
+template<typename T>
+GMatrix<T>::GMatrix(unsigned rows, unsigned cols, std::vector<T> Elements)
+  : nRows(rows), nCols(cols), Matrix(Elements)
+{
+}
+
+template<typename T>
+void GMatrix<T>::SetZero()
+{
+  std::fill(Matrix.begin(), Matrix.end(), T(0.0));
+}
+
+/* Get a vector of the values in the input row*/
 template<typename T>
 std::vector<T> GMatrix<T>::GetRow(unsigned row) const
 {
@@ -52,6 +52,17 @@ std::vector<T> GMatrix<T>::GetCol(unsigned col) const
 }
 
 template<typename T>
+void GMatrix<T>::Transpose()
+{
+  if (nRows != nCols) return;
+
+  /* Transpose the matrix*/
+  for (unsigned i = 0; i < nRows - 2; ++i)
+    for (unsigned j = i + 1; i < nRows - 1; ++j)
+      std::swap(Matrix.at(i * nRows + j), Matrix.at(j * nRows + i));
+}
+
+template<typename T>
 GMatrix<T> GMatrix<T>::operator+(const GMatrix<T>& a) const
 {
   return GMatrix<T>(*this) += a;
@@ -60,7 +71,21 @@ GMatrix<T> GMatrix<T>::operator+(const GMatrix<T>& a) const
 template<typename T>
 GMatrix<T> GMatrix<T>::operator*(const GMatrix<T>& a) const
 {
-  return GMatrix<T>(*this) += a;
+  if (nCols != a.NumRows()) throw SizeMismatchViolation();
+
+  /* Vector to hold final quantity. Should hold same amount*/
+  std::vector<T> Product;
+  for(unsigned i = 0; i < nRows; ++i)
+  {
+    auto row = GetRow(i);
+    for (unsigned j = 0; j < a.NumCols(); ++j)
+    {
+      auto col = a.GetCol(j);
+      Product.emplace_back(DotProduct(row, col));
+    }
+  }
+
+  return GMatrix<T>(nRows, a.NumCols(), Product);
 }
 
 template<typename T>
@@ -70,48 +95,35 @@ GMatrix<T> GMatrix<T>::operator*(const T& scalar) const
 }
 
 template<typename T>
-GMatrix<T>& GMatrix<T>::operator+=(const GMatrix<T>& b)
+GMatrix<T>& GMatrix<T>::operator+=(const GMatrix<T>& a)
 {
-  if (nRows != b.NumRows() || nCols != b.NumCols()) throw SizeMismatchViolation();
+  if (nRows != a.NumRows() || nCols != a.NumCols()) throw SizeMismatchViolation();
 
   for (unsigned i = 0; i < Matrix.size(); ++i)
-    Matrix[i] += b(i);
+    Matrix[i] += a(i);
 
   return *this;
 }
 
 template<typename T>
-GMatrix<T>& GMatrix<T>::operator*=(const T& b)
+GMatrix<T>& GMatrix<T>::operator*=(const T& a)
 {
   for (auto& Element: Matrix)
-    Element *= b;
+    Element *= a;
 
   return *this;
 }
 
 template<typename T>
-GMatrix<T>& GMatrix<T>::operator*= (const GMatrix<T>& b)
+GMatrix<T>& GMatrix<T>::operator/=(const T& a)
 {
-  if (nCols != b.NumRows()) throw SizeMismatchViolation();
-
-  std::vector<T> Product;
-  for(unsigned i = 0; i < nRows; ++i)
-  {
-    auto row = this->GetRow(i);
-    for (unsigned j = 0; j < nCols; ++j)
-    {
-      auto col = b.GetCol(j);
-      auto prod = DotProduct(row, col);
-      Product.push_back(prod);
-    }
-  }
-
-  nCols = b.NumCols();
-  Matrix = b.Data();
+  for (auto& Element: Matrix)
+    Element /= a;
 
   return *this;
 }
 
+/* Find the dot product of two vectors */
 template<typename T>
 T GMatrix<T>::DotProduct(const std::vector<T>& a, const std::vector<T>& b)
 {

@@ -21,7 +21,7 @@
 #include "GColor.h"
 #include "GRect.h"
 #include "GEdge.h"
-#include "GMatrix.h"
+#include "GMatrix3x3.h"
 
 #define GETA(a)    		  GPixel_GetA(a)
 #define GETR(a)    		  GPixel_GetR(a)
@@ -35,6 +35,8 @@ public:
 	MyCanvas(const GBitmap& bitmap);
 
 	~MyCanvas();
+
+	class SizeViolation {};
 
 	/** Fill the entire canvas with the specified color, using SRC porter-duff mode. **/
 	void clear(const GColor& color) override;
@@ -55,6 +57,8 @@ public:
 	 * */
 	void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
 
+	void fillDeviceBitmap(const GBitmap& src, const std::vector<GPoint>& Points, const GMatrix3x3f& InverseRect);
+
 	/**
    *  Fill the convex polygon with the color, following the same "containment" rule as
    *  rectangles.
@@ -62,7 +66,8 @@ public:
    *  If the color's alpha is < 1, blend it using SRCOVER blend mode.
    **/
 	void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
-
+	/* My Fill convex using a vector*/
+	void fillDevicePolygon(const std::vector<GPoint>& Points, const GColor& color);
 	/**
    *  Saves a copy of the CTM, allowing subsequent modifications (by calling concat()) to be
    *  undone when restore() is called.
@@ -73,18 +78,14 @@ public:
    *  call to save() was made. These calls can be nested.
    */
 	void restore() override;
-	/**
-   *  Modifies the CTM (current transformation matrix) by pre-concatenating it with the specfied
-   *  matrix.
-   *
-   *  CTM' = CTM * matrix
-   *
-   *  The result is that any drawing that uses the new CTM' will be affected AS-IF it were
-   *  first transformed by matrix, and then transformed by the previous CTM.
-   */
+	/* Concat the input matrix onto the matrix on top of the stack*/
 	void concat(const float matrix[6]) override;
 
-	void TransformPoints(const std::vector<GPoint>& Points, std::vector<GPoint>& Transformed);
+	std::vector<GPoint> QuadToPoints(const GRect& Rect);
+
+	void CTMPoints(std::vector<GPoint>& Points);
+
+	GRect PointsToQuad(const std::vector<GPoint>& Points);
 
 	/* Multiply Divide multiply again by 255 and round 2 Colors into another*/
   unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);
@@ -102,23 +103,16 @@ public:
 	 * The Edges should make a convex shape from top down */
 	std::vector<GEdge> MakeConvexEdges(const std::vector<GPoint>& Points);
 
-	/* Any edge with a point outside the bitmap height is now pinned to the bitmap */
-	template <typename Container> void PinTopAndBot(Container& Edges);
-
+	/* Any edge with a point outside the bitmap width is now pinned and a in bound edge is now created */
 	void ClipEdgesTopAndBottom(std::vector<GEdge>& Edges);
-
-	/* Any edge with a point outside the bitmap width is now pinned and a straight edge is now created*/
 	void ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
-	/**/
 	void ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
 
+	void DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src);
 	/* Draw the polygon using the container of edges to the input color*/
 	void DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color);
-
-	void CheckEdgeValues(const std::vector<GEdge>& Edges);
 private:
 	const GBitmap Bitmap;
 	const GIRect BmpRect;
-	GMatrix<float>* CTM;
-	GMatrix<float>* Save;
+	std::stack<GMatrix3x3f> MatrixStack;
 };
