@@ -189,19 +189,21 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 
 	CTMPoints(Points);
 
+	/* If the CTM does not preserve a rect then we draw bmp into a polygon*/
 	if (!MatrixStack.top().PreservesRect())
 	{
 		fillDeviceBitmap(src, Points, BmpToRectMat);
 		return;
 	}
 
+	/* Draw the bitmap into the rect*/
   GIRect rounded = PointsToQuad(Points).round();    			//Get the rounded rectangle from the input dst
 
 	if (!rounded.intersect(BmpRect)) 			//If the rounded rectangle does not intersect the bitmap
 		return;
 
 	float FX = src.width() / dst.width();
-	float FY = src.width() / dst.width();
+	float FY = src.height() / dst.height();
 
 	/* Need to get the pixel addresses for src and output bitmaps for both */
 	GPixel *_SrcPixels = src.pixels();
@@ -456,6 +458,11 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
 			Edge.SetBottom((int)(ClipY + .5));
 		}
 	}
+}
+
+void MyCanvas::ShadeRow(unsigned x, unsigned y)
+{
+
 }
 
 void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect)

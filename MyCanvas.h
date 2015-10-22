@@ -40,62 +40,29 @@ public:
 
 	/** Fill the entire canvas with the specified color, using SRC porter-duff mode. **/
 	void clear(const GColor& color) override;
-
-	/**
-	 *  Fill the rectangle with the color, using SRC_OVER porter-duff mode.
-	 *  The affected pixels are those whose centers are "contained" inside the rectangle:
-	 *      e.g. contained == center > min_edge && center <= max_edge
-	 *  Any area in the rectangle that is outside of the bounds of the canvas is ignored.
-	 */
 	void fillRect(const GRect&, const GColor&) override;
-
-	/**
-	 * Scale and translate the ibtmap such that it fills the specific rectangle.
-	 * Any area in the rectangle that is outside of the bounds of the canvas is ignored.
-	 * If a given pixel in the bitmap is not opaque (e.g. GPixel_GetA() < 255) then blend it
-	 * using SRCOVER blend mode
-	 * */
 	void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
-
 	void fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix3x3f& InverseRect);
-
-	/**
-   *  Fill the convex polygon with the color, following the same "containment" rule as
-   *  rectangles.
-   *  Any area in the polygon that is outside of the bounds of the canvas is ignored.
-   *  If the color's alpha is < 1, blend it using SRCOVER blend mode.
-   **/
 	void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
-	/* My Fill convex using a vector*/
 	void fillDevicePolygon(std::vector<GPoint> Points, const GColor& color);
-	/**
-   *  Saves a copy of the CTM, allowing subsequent modifications (by calling concat()) to be
-   *  undone when restore() is called.
-   */
+
 	void save() override;
-	/**
-   *  Balances calls to save(), returning the CTM to the state it was in when the corresponding
-   *  call to save() was made. These calls can be nested.
-   */
 	void restore() override;
-	/* Concat the input matrix onto the matrix on top of the stack*/
 	void concat(const float matrix[6]) override;
 
+	/* Convert input Quad into points*/
 	std::vector<GPoint> QuadToPoints(const GRect& Rect);
-
+	/* Convert input points by the CTM*/
 	void CTMPoints(std::vector<GPoint>& Points);
-
-	GRect PointsToQuad(const std::vector<GPoint>& Points);
+	/* Convert input points into a quad*/
+	GRect PointsToQtuad(const std::vector<GPoint>& Points);
 
 	/* Multiply Divide multiply again by 255 and round 2 Colors into another*/
   unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);
-
 	/** Blends two Pixel's depending on color **/
 	GPixel Blend(const GPixel src, const GPixel dst);
-
 	/** Converts the input color and returns a premultiplied and converted to GPixel value **/
 	GPixel ColorToPixel(const GColor color);
-
 	/* Sort the points for the convex */
 	void SortPointsForConvex(std::vector<GPoint>& Points);
 
@@ -103,13 +70,13 @@ public:
 	 * The Edges should make a convex shape from top down */
 	std::vector<GEdge> MakeConvexEdges(const std::vector<GPoint>& Points);
 
-	void ClipEdges(std::vector<GEdge>& Edges);
-
 	/* Any edge with a point outside the bitmap width is now pinned and a in bound edge is now created */
+	void ClipEdges(std::vector<GEdge>& Edges);
 	void ClipEdgesTopAndBottom(std::vector<GEdge>& Edges);
 	void ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
 	void ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
 
+	/* Draw the input bitmap into a polygon, InverseRect is the RectToRectMatrix*/
 	void DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect);
 	/* Draw the polygon using the container of edges to the input color*/
 	void DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color);
