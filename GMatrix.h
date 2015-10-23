@@ -39,10 +39,14 @@ public:
 
   /* Calculate the dot product from two vectors, they must be the same size*/
   static T DotProduct(const std::vector<T>& a, const std::vector<T>& b);
-
   /* Returns a vector of the elements in the specified row or column*/
+
   std::vector<T> GetRow(unsigned row) const;
   std::vector<T> GetCol(unsigned col) const;
+
+  //void ConcatIn(const GMatrix& a);
+  GMatrix<T>& ConcatIn(const GMatrix& a); //Difference b/w this and above?
+  //GMatrix ConcatOut(const GMatrix& a);
 
   /* Equality operators*/
   bool operator == (const GMatrix<T>& a) const;
@@ -51,7 +55,7 @@ public:
   /* Apparently passing by value on left is better performance for chaining? a + b + c*/
   /* Binary arithmetic overloads, declared as friend for performance? */
   GMatrix<T> operator+(const GMatrix<T>& a) const;
-  GMatrix<T> operator*(const GMatrix<T>& a) const;
+  //GMatrix<T> operator*(const GMatrix<T>& a) const;
   GMatrix<T> operator*(const T& scalar) const;
 
   /* Overloads of arithmetic assignment operators */

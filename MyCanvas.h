@@ -50,12 +50,14 @@ public:
 	void restore() override;
 	void concat(const float matrix[6]) override;
 
+	GMatrix3x3f GetCTM() { return MatrixStack.top(); }
+
 	/* Convert input Quad into points*/
-	std::vector<GPoint> QuadToPoints(const GRect& Rect);
+	static std::vector<GPoint> QuadToPoints(const GRect& Rect);
 	/* Convert input points by the CTM*/
 	void CTMPoints(std::vector<GPoint>& Points);
 	/* Convert input points into a quad*/
-	GRect PointsToQtuad(const std::vector<GPoint>& Points);
+	static GRect PointsToQuad(const std::vector<GPoint>& Points);
 
 	/* Multiply Divide multiply again by 255 and round 2 Colors into another*/
   unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);

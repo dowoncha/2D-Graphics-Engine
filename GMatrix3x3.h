@@ -1,11 +1,14 @@
 #pragma once
 
 #include "GMatrix.h"
+#include "GPoint.h"
 
 class GMatrix3x3f : public GMatrix<float>
 {
 public:
   GMatrix3x3f(std::initializer_list<float> Elements);
+
+  GMatrix3x3f(std::vector<float> Elements);
 
   static GMatrix3x3f MakeTranslationMatrix(float x, float y);
 
@@ -18,7 +21,13 @@ public:
   /* Check whether the matrix will preserve the rectanglular shape*/
   bool PreservesRect();
 
+  void Round();
+
   void concat(const GMatrix3x3f& a);
 
-  GMatrix3x3f GetInverse() const; 
+  GMatrix3x3f operator*(const GMatrix3x3f& a);
+
+  GPoint ConvertPoint(const GPoint& P) const;
+
+  GMatrix3x3f GetInverse() const;
 };

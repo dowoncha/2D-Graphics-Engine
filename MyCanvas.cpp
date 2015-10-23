@@ -143,19 +143,12 @@ std::vector<GPoint> MyCanvas::QuadToPoints(const GRect& Rect)
 void MyCanvas::CTMPoints(std::vector<GPoint>& Points)
 {
 	/* Get a reference to the CTM so we can modify it*/
-	auto &CTM = MatrixStack.top();
-	/* Hold the transformed points */
-	std::vector<GPoint> Transformed;
+	auto CTM = GetCTM();
 
 	for (auto &Point: Points)
 	{
-		/* Transform all xy points by the CTM. We use GMatrix<float> for template Dependency due to derived class type of CTM*/
-		auto NewX = GMatrix<float>::DotProduct(CTM.GetRow(0), {Point.x(), Point.y(), 1});
-		auto NewY = GMatrix<float>::DotProduct(CTM.GetRow(1), {Point.x(), Point.y(), 1});
-		Transformed.emplace_back(GPoint::Make(NewX, NewY));
+		Point = CTM.ConvertPoint(Point);
 	}
-
-	Points = Transformed;
 }
 
 GRect MyCanvas::PointsToQuad(const std::vector<GPoint>& Points)
@@ -167,26 +160,33 @@ GRect MyCanvas::PointsToQuad(const std::vector<GPoint>& Points)
 
 GMatrix3x3f RectToRect(const GRect& src, const GRect& dst)
 {
-	auto RectScale = GMatrix3x3f::MakeScaleMatrix(
-		src.width() / dst.width(),
-		src.height() / dst.height()
+	auto SrcTranslate = GMatrix3x3f::MakeTranslationMatrix(
+		-1 * src.left(), -1 * src.top()
 	);
 
-	auto RectTranslate = GMatrix3x3f::MakeTranslationMatrix( dst.x(), dst.y() );
+	/* Scale by the width and height*/
+	auto RectScale = GMatrix3x3f::MakeScaleMatrix(
+		dst.width() / src.width(),
+		dst.height() / src.height()
+	);
 
-	RectScale.concat(RectTranslate);
+	auto DstTranslate = GMatrix3x3f::MakeTranslationMatrix(dst.left(), dst.top());
 
-	return RectScale;
+	DstTranslate.concat(RectScale);
+	DstTranslate.concat(SrcTranslate);
+
+	return DstTranslate;
 }
 
 void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 {
 	assert(!dst.isEmpty());
 
+	/* Get the matrix of the conversion from src to dst rect */
 	auto BmpToRectMat = RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
-
+	/* Convert the destination rect into points*/
 	std::vector<GPoint> Points = QuadToPoints(dst);
-
+	/* Convert The Points by the CTM*/
 	CTMPoints(Points);
 
 	/* If the CTM does not preserve a rect then we draw bmp into a polygon*/
@@ -196,43 +196,20 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 		return;
 	}
 
-	/* Draw the bitmap into the rect*/
-  GIRect rounded = PointsToQuad(Points).round();    			//Get the rounded rectangle from the input dst
-
-	if (!rounded.intersect(BmpRect)) 			//If the rounded rectangle does not intersect the bitmap
-		return;
-
-	float FX = src.width() / dst.width();
-	float FY = src.height() / dst.height();
-
-	/* Need to get the pixel addresses for src and output bitmaps for both */
-	GPixel *_SrcPixels = src.pixels();
-	GPixel *_DstPixels = Bitmap.pixels();
-
-	auto Inverse = BmpToRectMat.GetInverse();
-	Inverse.concat(MatrixStack.top().GetInverse());
-
-	/* Need to offset the Dst Pixels by the number of rows in rounded */
-	_DstPixels = (GPixel*)((char*)_DstPixels + Bitmap.rowBytes() * rounded.top());
-
-	// float srcY = .5 * FY;		//This is the middle of the pixel in the layer first row
-	// for (int y = rounded.top(); y < rounded.bottom(); ++y, srcY += FY)
-	//   {
-	// 	float srcX =  .5 * FX;
-	// 	/* Need this to get the GPixel row from the src */
-	// 	GPixel* _src = (GPixel*)((char*)_SrcPixels + src.rowBytes() * (int)srcY);
-	// 	for (int x = rounded.left(); x < rounded.right(); ++x, srcX += FX)
-	// 	{
-	// 		/* skip any out of bound pixels*/
-	// 		if ( x < 0 || y < 0 || x > BmpRect.width() || y > BmpRect.height())
-	// 			continue;
+	/* Convert the input vector of points back into a quad after being transformed, we also round the values of the quad*/
+	// auto TransformedQuad = PointsToQuad(Points).round();
 	//
-	// 		GPixel SrcPixel = _src[(int)srcX]; 			//Find the pixel in the src bitmap
-	// 		_DstPixels[x] = Blend(SrcPixel, _DstPixels[x]);		//Write to dst bitmap
-	// 	}
+	// /* Makes sure the bitmaps are touching, also clips the rectangle i believe.*/
+	// if (!TransformedQuad.intersect(BmpRect)) 			//If the rounded rectangle does not intersect the bitmap
+	// 	return;
 	//
-	// 	_DstPixels = (GPixel*)((char*)_DstPixels + Bitmap.rowBytes());	//Offset dst bitmap to next row
-	//   }
+	// /* Get the beginning of rht pixel bitmap addresses from src and dst bitmaps*/
+	// GPixel* SrcPixels = src.pixels();
+	// GPixel* DstPixels = Bitmap.pixels();
+	//
+	// /* Get the inversion matrix from the rect to rect and CTM conversion*/
+	// GMatrix3x3f CTM = MatrixStack.top();
+	// CTM.concat(BmpToRectMat);
 }
 
 void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const GColor& color)
@@ -460,11 +437,6 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
 	}
 }
 
-void MyCanvas::ShadeRow(unsigned x, unsigned y)
-{
-
-}
-
 void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect)
 {
 	if (Edges.size() < 2)
@@ -482,6 +454,7 @@ void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, 
 
 	/* Move DstPixels to y offset.*/
 	GPixel *DstPixels = Bitmap.pixels();
+	GPixel *SrcPixels = src.pixels();
 	/* Offset the pixel pointer to the proper row*/
 	DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes() * LeftEdge.GetTop());
 
@@ -491,7 +464,9 @@ void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, 
 		/* Round the beginning of current x for each scanline draw*/
 		for ( float x = LeftEdge.GetCurrentX() + .5; x < RightEdge.GetCurrentX(); x += 1.0f)
 		{
-			DstPixels[(int)x] = 0;
+			auto Converted = InverseRect.ConvertPoint(GPoint{x, y});
+			unsigned index = (int)Converted.x() + (int)Converted.y() *  src.rowBytes();
+			GPixel SrcPixel = SrcPixels[index];
 		}
 
 		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());

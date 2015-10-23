@@ -4,6 +4,10 @@ GMatrix3x3f::GMatrix3x3f(std::initializer_list<float> Elements)
   : GMatrix<float>(3, 3, Elements)
 {}
 
+GMatrix3x3f::GMatrix3x3f(std::vector<float> Elements)
+  : GMatrix<float>(3, 3, Elements)
+{}
+
 GMatrix3x3f GMatrix3x3f::MakeTranslationMatrix(float x, float y)
 {
   return GMatrix3x3f({1.0f, 0.0f , x, 0.0f, 1.0f, y, 0.0f, 0.0f, 1.0f});
@@ -45,6 +49,21 @@ void GMatrix3x3f::concat(const GMatrix3x3f& a)
   }
 
   Matrix = Product;
+}
+
+GPoint GMatrix3x3f::ConvertPoint(const GPoint& P) const
+{
+  std::vector<float> Column{P.x(), P.y(), 1};
+  auto NewX = GMatrix<float>::DotProduct( this->GetRow(0), Column);
+  auto NewY = GMatrix<float>::DotProduct( this->GetRow(1), Column);
+
+  return GPoint::Make(NewX, NewY);
+}
+
+void GMatrix3x3f::Round()
+{
+  for (auto &Element : Matrix)
+    Element = (int)(Element + .5);
 }
 
 /* Assume the point coming in has not modifed the 3rd row for z values, they should

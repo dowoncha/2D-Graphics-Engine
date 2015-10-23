@@ -45,7 +45,7 @@ std::vector<T> GMatrix<T>::GetCol(unsigned col) const
   if (col >= nCols) throw BoundsViolation();
 
   std::vector<T> Col;
-  for (unsigned i = col; i < Matrix.size(); i += nRows)
+  for (unsigned i = col; i < Matrix.size(); i += nCols)
     Col.push_back(Matrix[i]);
 
   return Col;
@@ -69,7 +69,7 @@ GMatrix<T> GMatrix<T>::operator+(const GMatrix<T>& a) const
 }
 
 template<typename T>
-GMatrix<T> GMatrix<T>::operator*(const GMatrix<T>& a) const
+GMatrix<T>& GMatrix<T>::ConcatIn(const GMatrix& a)
 {
   if (nCols != a.NumRows()) throw SizeMismatchViolation();
 
@@ -85,8 +85,32 @@ GMatrix<T> GMatrix<T>::operator*(const GMatrix<T>& a) const
     }
   }
 
-  return GMatrix<T>(nRows, a.NumCols(), Product);
+  Matrix = Product;
+
+  return *this;
 }
+
+//
+// /* This multiply is causing alot of problems within inheritence Just going to add a concat*/
+// template<typename T>
+// GMatrix<T> GMatrix<T>::operator*(const GMatrix<T>& a) const
+// {
+//   if (nCols != a.NumRows()) throw SizeMismatchViolation();
+//
+//   /* Vector to hold final quantity. Should hold same amount*/
+//   std::vector<T> Product;
+//   for(unsigned i = 0; i < nRows; ++i)
+//   {
+//     auto row = GetRow(i);
+//     for (unsigned j = 0; j < a.NumCols(); ++j)
+//     {
+//       auto col = a.GetCol(j);
+//       Product.emplace_back(DotProduct(row, col));
+//     }
+//   }
+//
+//   return GMatrix<T>(nRows, a.NumCols(), Product);
+// }
 
 template<typename T>
 GMatrix<T> GMatrix<T>::operator*(const T& scalar) const
