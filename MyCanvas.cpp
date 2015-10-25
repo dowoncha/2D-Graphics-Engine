@@ -41,6 +41,9 @@ GPixel MyCanvas::Blend(const GPixel src, const GPixel dst)
   if (GETA(src) == 0xFF)
       return src;
 
+	if (GETA(src) == 0)
+		return dst;
+
   //Get the blend alpha value from 255 - Source_Alpha
   COLORBYTE src_a_blend = 0xFF - GETA(src);
 
@@ -50,8 +53,11 @@ GPixel MyCanvas::Blend(const GPixel src, const GPixel dst)
    * */
   COLORBYTE alpha = GETA(src) + MulDiv255Round(src_a_blend, GETA(dst));
   COLORBYTE red = GETR(src) + MulDiv255Round(src_a_blend, GETR(dst));
+	red = (red <= alpha) ? red : alpha;
   COLORBYTE green = GETG(src) + MulDiv255Round(src_a_blend, GETG(dst));
+	green = (green <= alpha) ? green : alpha;
   COLORBYTE blue = GETB(src) + MulDiv255Round(src_a_blend, GETB(dst));
+	blue = (blue <= alpha) ? blue : alpha;
 
   return GPixel_PackARGB(alpha, red, green, blue);
 }
@@ -169,9 +175,10 @@ GMatrix3x3f RectToRect(const GRect& src, const GRect& dst)
 		dst.width() / src.width(),
 		dst.height() / src.height()
 	);
-
+	/* Get tranlsation matrix of the dst rectangle*/
 	auto DstTranslate = GMatrix3x3f::MakeTranslationMatrix(dst.left(), dst.top());
 
+	/* Concatenate the 3 matrices. DstTranslate * Scale * SrcTranslate*/
 	DstTranslate.concat(RectScale);
 	DstTranslate.concat(SrcTranslate);
 
@@ -188,33 +195,17 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 	std::vector<GPoint> Points = QuadToPoints(dst);
 	/* Convert The Points by the CTM*/
 	CTMPoints(Points);
-
-	/* If the CTM does not preserve a rect then we draw bmp into a polygon*/
-	if (!MatrixStack.top().PreservesRect())
-	{
-		fillDeviceBitmap(src, Points, BmpToRectMat);
-		return;
-	}
-
-	/* Convert the input vector of points back into a quad after being transformed, we also round the values of the quad*/
-	// auto TransformedQuad = PointsToQuad(Points).round();
-	//
-	// /* Makes sure the bitmaps are touching, also clips the rectangle i believe.*/
-	// if (!TransformedQuad.intersect(BmpRect)) 			//If the rounded rectangle does not intersect the bitmap
-	// 	return;
-	//
-	// /* Get the beginning of rht pixel bitmap addresses from src and dst bitmaps*/
-	// GPixel* SrcPixels = src.pixels();
-	// GPixel* DstPixels = Bitmap.pixels();
-	//
-	// /* Get the inversion matrix from the rect to rect and CTM conversion*/
-	// GMatrix3x3f CTM = MatrixStack.top();
-	// CTM.concat(BmpToRectMat);
+	/* Get current CTM and concat the rect to rect onto it*/
+	auto CTM = GetCTM();
+	/**/
+	CTM.ConcatIn(BmpToRectMat);
+	/* Send the inverse of the converson matrix and converted points for drawing*/
+	fillDeviceBitmap(src, Points, CTM.GetInverse());
 }
 
 void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const GColor& color)
 {
-	assert(count > 2);
+	if (count < 3) return;
 
 	/* Declare a vector of the points*/
 	std::vector<GPoint> Transformed(Points, Points + count);
@@ -232,7 +223,7 @@ void MyCanvas::fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, 
 		auto Edges = MakeConvexEdges(Points);
 		/* Clip the Edges from the current bitmap */
 		ClipEdges(Edges);
-
+		/* Draw the points*/
 		DrawBitmapPolygon(Edges, src, InverseRect);
 }
 
@@ -333,6 +324,7 @@ std::vector<GEdge> MyCanvas::MakeConvexEdges(const std::vector<GPoint>& Points)
 
 void MyCanvas::ClipEdges(std::vector<GEdge>& Edges)
 {
+
 	std::vector<GEdge> NewEdges;
 	/* Clip top and bot */
 	ClipEdgesTopAndBottom(Edges);
@@ -452,7 +444,7 @@ void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, 
 	GEdge LeftEdge = Edges[0];
 	GEdge RightEdge = Edges[1];
 
-	/* Move DstPixels to y offset.*/
+	/* Get Pixel addresses for src and dst bitmaps*/
 	GPixel *DstPixels = Bitmap.pixels();
 	GPixel *SrcPixels = src.pixels();
 	/* Offset the pixel pointer to the proper row*/
@@ -464,9 +456,12 @@ void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, 
 		/* Round the beginning of current x for each scanline draw*/
 		for ( float x = LeftEdge.GetCurrentX() + .5; x < RightEdge.GetCurrentX(); x += 1.0f)
 		{
+			/* Lookup xy values from src bitmap */
 			auto Converted = InverseRect.ConvertPoint(GPoint{x, y});
-			unsigned index = (int)Converted.x() + (int)Converted.y() *  src.rowBytes();
+			int index = (int)Converted.x() + ((int)Converted.y()) * src.width();
 			GPixel SrcPixel = SrcPixels[index];
+
+			DstPixels[(int)x] = Blend(SrcPixel, DstPixels[(int)x]);
 		}
 
 		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
@@ -536,6 +531,10 @@ void MyCanvas::DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color)
 	}
 }
 
+void MyCanvas::LookUpAddress(GPixel* Pixels, float x, float y, const GMatrix3x3f& InverseRect)
+{
+	return;
+}
 // void MyCanvas::CheckEdgeValues(const std::vector<GEdge>& Edges)
 // {
 //   for (const auto Edge: Edges)

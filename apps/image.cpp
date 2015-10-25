@@ -63,7 +63,7 @@ static double compare(const GBitmap& a, const GBitmap& b, int tolerance, bool ve
         rowA = (const GPixel*)((const char*)rowA + a.rowBytes());
         rowB = (const GPixel*)((const char*)rowB + b.rowBytes());
     }
-    
+
     double score = 1.0 * (total - total_diff) / total;
     if (verbose) {
         printf("    - score %d, max_diff %d\n", (int)(score * 100), max_diff);
@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
     if (verbose) {
         printf("-- tolerance = %d\n", tolerance);
     }
-    
+
     double percent_correct = 0;
     int counter = 0;
     for (int i = 0; gDrawRecs[i].fDraw; ++i) {
@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
         if (verbose) {
             printf("image: %s\n", path.c_str());
         }
-        
+
         GBitmap testBM;
         handle_proc(gDrawRecs[i], path.c_str(), &testBM);
 
@@ -245,7 +245,7 @@ int main(int argc, char** argv) {
             exp_path += gDrawRecs[i].fName;
             exp_path += ".png";
             GBitmap expectedBM;
-    
+
             if (!expectedBM.readFromFile(exp_path.c_str())) {
                 printf("- failed to load <%s>\n", exp_path.c_str());
             } else {
@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
                 percent_correct += correct;
             }
         }
-        
+
         free(testBM.fPixels);
     }
     if (diffFile) {

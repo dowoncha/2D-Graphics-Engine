@@ -76,13 +76,15 @@ GMatrix3x3f GMatrix3x3f::GetInverse() const
   float d = Matrix[3], e = Matrix[4], f = Matrix[5];
   float g = Matrix[6], h = Matrix[7], i = Matrix[8];
 
-  float determinant = a * e - b * d;
+  float determinant = a * (e * i - f * h) - b * (d * i - f * g ) + c * (d * h - e * g );
 
   GMatrix3x3f Inverse({
     e * i - f * h,    c * h - b * i,      b * f - c * e,
     f * g - d * i,    a * i - c * g,      c * d - a * f,
-    d * h - e * g,    b * g - a * h,      determinant
+    d * h - e * g,    b * g - a * h,      a * e - b * d
   });
+
+  Inverse /= determinant;
 
   return Inverse;
 }
