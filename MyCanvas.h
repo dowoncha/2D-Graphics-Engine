@@ -91,7 +91,7 @@ public:
 	void DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect);
 	void DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color);
 
-	void LookUpAddress(GPixel* Pixels, float x, float y, const GMatrix3x3f& InverseRect);
+	static int clamp(int min, int value, int max);
 private:
 	const GBitmap Bitmap;
 	const GIRect BmpRect;
