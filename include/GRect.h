@@ -46,7 +46,14 @@ public:
         fRight  = w;
         fBottom = h;
     }
-    
+
+    void offset(T dx, T dy) {
+        fLeft   += dx;
+        fTop    += dy;
+        fRight  += dx;
+        fBottom += dy;
+    }
+
     bool intersects(const GTRect& other) const {
         T l = std::max(fLeft,   other.fLeft);
         T t = std::max(fTop,    other.fTop);

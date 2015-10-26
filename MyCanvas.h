@@ -41,14 +41,17 @@ public:
 	/** Fill the entire canvas with the specified color, using SRC porter-duff mode. **/
 	void clear(const GColor& color) override;
 	void fillRect(const GRect&, const GColor&) override;
+	//PA2
 	void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
-	void fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix3x3f& InverseRect);
+	//PA3
 	void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
-	void fillDevicePolygon(std::vector<GPoint> Points, const GColor& color);
-
+	//PA4
 	void save() override;
 	void restore() override;
 	void concat(const float matrix[6]) override;
+	//PA5
+	void shadeRect(const GRect& rect, GShader* shader);
+	void shadeConvexPolygon(const GPoint[], int count, GShader* shader);
 
 	GMatrix3x3f GetCTM() { return MatrixStack.top(); }
 
@@ -61,15 +64,17 @@ public:
 
 	/* Multiply Divide multiply again by 255 and round 2 Colors into another*/
   unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);
+
 	/** Blends two Pixel's depending on color **/
 	GPixel Blend(const GPixel src, const GPixel dst);
+
 	/** Converts the input color and returns a premultiplied and converted to GPixel value **/
 	GPixel ColorToPixel(const GColor color);
+
 	/* Sort the points for the convex */
 	void SortPointsForConvex(std::vector<GPoint>& Points);
 
-	/* This will conver the vector of input points into vector of Edges
-	 * The Edges should make a convex shape from top down */
+	/* This will take a set of points and make them into edges for a convex polygon*/
 	std::vector<GEdge> MakeConvexEdges(const std::vector<GPoint>& Points);
 
 	/* Any edge with a point outside the bitmap width is now pinned and a in bound edge is now created */
@@ -78,9 +83,12 @@ public:
 	void ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
 	void ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
 
-	/* Draw the input bitmap into a polygon, InverseRect is the RectToRectMatrix*/
+	/* Points coming into these should be converted by CTM already. This will make the edges, clip, then draw*/
+	void fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix3x3f& InverseRect);
+	void fillDevicePolygon(std::vector<GPoint> Points, const GColor& color);
+
+	/* Draw the input bitmap into a polygon, InverseRect is the (CTM * R2R) ^ -1 */
 	void DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect);
-	/* Draw the polygon using the container of edges to the input color*/
 	void DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color);
 
 	void LookUpAddress(GPixel* Pixels, float x, float y, const GMatrix3x3f& InverseRect);

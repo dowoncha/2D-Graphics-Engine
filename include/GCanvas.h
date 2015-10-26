@@ -11,6 +11,7 @@ class GBitmap;
 class GColor;
 class GPoint;
 class GRect;
+class GShader;
 
 class GCanvas {
 public:
@@ -64,37 +65,17 @@ public:
     /**
      *  Pretranslates the CTM by the specified tx, ty
      */
-    void translate(float tx, float ty) {
-        const float mat[6] = {
-            1, 0, tx,
-            0, 1, ty,
-        };
-        this->concat(mat);
-    }
+    void translate(float tx, float ty);
 
     /**
      *  Prescales the CTM by the specified sx, sy
      */
-    void scale(float sx, float sy) {
-        const float mat[6] = {
-            sx, 0, 0,
-            0, sy, 0,
-        };
-        this->concat(mat);
-    }
+    void scale(float sx, float sy);
 
     /**
      *  Prerotates the CTM by the specified angle in radians.
      */
-    void rotate(float radians) {
-        const float c = cos(radians);
-        const float s = sin(radians);
-        const float mat[6] = {
-            c, -s, 0,
-            s, c, 0,
-        };
-        this->concat(mat);
-    }
+    void rotate(float radians);
 
     /**
      *  Fill the entire canvas with the specified color.
@@ -134,6 +115,18 @@ public:
      *  If the color's alpha is < 1, blend it using SRCOVER blend mode.
      */
     virtual void fillConvexPolygon(const GPoint[], int count, const GColor&) = 0;
+
+    /**
+     *  Fill the specified rect using the shader. The colors returned by the shader are blended
+     *  into the canvas using SRC_OVER blend mode.
+     */
+    virtual void shadeRect(const GRect& rect, GShader* shader) = 0;
+
+    /**
+     *  Fill the specified polygon using the shader. The colors returned by the shader are blended
+     *  into the canvas using SRC_OVER blend mode.
+     */
+    virtual void shadeConvexPolygon(const GPoint[], int count, GShader* shader) = 0;
 };
 
 #endif

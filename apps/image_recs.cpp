@@ -8,6 +8,7 @@
 #include "GColor.h"
 #include "GPoint.h"
 #include "GRect.h"
+#include "GShader.h"
 #include <string>
 
 #define RAMP_W      1
@@ -29,7 +30,7 @@ static void draw_solid_ramp(GCanvas* canvas) {
         { GColor::MakeARGB(1,   c,   c,   0), GColor::MakeARGB(0,  d,  d,  0) },   // yellow
     };
 
-
+    
     for (int y = 0; y < GARRAY_COUNT(rec); ++y) {
         GColor color = rec[y].fC0;
         GColor delta = rec[y].fDC;
@@ -92,7 +93,7 @@ static void draw_spocks_quad(GCanvas* canvas) {
 
 static void draw_spocks_zoom(GCanvas* canvas) {
     const int N = 300;
-
+    
     GBitmap tex;
     tex.readFromFile("apps/spock.png");
 
@@ -107,7 +108,7 @@ static const float gScaleUnitToByte = 255.99999f;
 
 static GPixel pin_and_premul_to_pixel(GColor c) {
     c = c.pinToUnit();
-
+    
     float a = c.fA * gScaleUnitToByte;
     int ia = (int)a;
     int ir = (int)(a * c.fR);
@@ -118,12 +119,12 @@ static GPixel pin_and_premul_to_pixel(GColor c) {
 
 static void make_circle(const GBitmap& bitmap, const GColor& color) {
     const GPixel px = pin_and_premul_to_pixel(color);
-
+    
     const float cx = (float)bitmap.width() / 2;
     const float cy = (float)bitmap.height() / 2;
     const float radius = cx - 1;
     const float radius2 = radius * radius;
-
+    
     GPixel* dst = bitmap.pixels();
     for (int y = 0; y < bitmap.height(); ++y) {
         const float dy = y - cy;
@@ -139,10 +140,7 @@ static void make_circle(const GBitmap& bitmap, const GColor& color) {
         dst = (GPixel*)((char*)dst + bitmap.rowBytes());
     }
 }
-/**
- * 	We pass in two iterators to containers, and then an initial variable of the container
- * for its type.
- * */
+
 class AutoBitmap : public GBitmap {
 public:
     AutoBitmap(int width, int height) {
@@ -230,7 +228,7 @@ static void draw_tri_clipped(GCanvas* canvas) {
 static void make_regular_poly(GPoint pts[], int count, float cx, float cy, float radius) {
     float angle = 0;
     const float deltaAngle = M_PI * 2 / count;
-
+    
     for (int i = 0; i < count; ++i) {
         pts[i].set(cx + cos(angle) * radius, cy + sin(angle) * radius);
         angle += deltaAngle;
@@ -268,7 +266,7 @@ static GPoint scale(GPoint vec, float size) {
 
 static void draw_line(GCanvas* canvas, GPoint a, GPoint b, float width, const GColor& color) {
     GPoint norm = scale(GPoint::Make(b.fY - a.fY, a.fX - b.fX), width/2);
-
+    
     GPoint pts[4];
     pts[0] = GPoint::Make(a.fX + norm.fX, a.fY + norm.fY);
     pts[1] = GPoint::Make(b.fX + norm.fX, b.fY + norm.fY);
@@ -286,7 +284,7 @@ static void draw_poly_rotate(GCanvas* canvas) {
     GColor color = GColor::MakeARGB(1, 1, 0, 0);
     const float deltaR = -1.0 / N;
     const float deltaB = 1.0 / N;
-
+    
     const float width = 10;
 
     for (float angle = 0; angle <= M_PI/2; angle += M_PI/2/N) {
@@ -433,6 +431,147 @@ static void draw_concat_rotate_bitmap(GCanvas* canvas) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void draw_grad_insets(GCanvas* canvas) {
+    const GColor colors[] = {
+        GColor::MakeARGB(1, 1, 0, 0), GColor::MakeARGB(1, 0, 0, 1)
+    };
+    
+    GRect r = GRect::MakeXYWH(50, 10, 300, 70);
+
+    for (int inset = -100; inset <= 100; inset += 50) {
+        const GPoint pts[] = {{ r.left() + inset, 0 }, { r.right() - inset, 0 }};
+        GShader* shader = GShader::FromLinearGradient(pts, colors);
+        canvas->shadeRect(r, shader);
+        delete shader;
+        r.offset(0, r.height() + 2);
+    }
+}
+
+static void draw_grad_insets_rot(GCanvas* canvas) {
+    canvas->translate(400, 0);
+    canvas->rotate(M_PI / 2);
+    draw_grad_insets(canvas);
+}
+
+static void draw_bm_localmatrix(GCanvas* canvas, const GRect& r, const GBitmap& tex,
+                                const float localMatrix[6]) {
+    GShader* shader = GShader::FromBitmap(tex, localMatrix);
+    canvas->shadeRect(r, shader);
+    delete shader;
+}
+
+static void draw_bm_pad(GCanvas* canvas) {
+    GBitmap tex;
+    tex.readFromFile("apps/spock.png");
+
+    const float scale = 0.5f;
+    const float w = tex.width() * scale;
+    const float h = tex.height() * scale;
+    const float extra = 100;
+
+    const float mat0[] = {
+        scale, 0, 10,
+        0, scale, 10
+    };
+    draw_bm_localmatrix(canvas, GRect::MakeXYWH(10, 10, w, h), tex, mat0);
+
+    canvas->save();
+    canvas->translate(w + 20, 0);
+    const float mat1[] = {
+        scale, 0, 10 + extra/2,
+        0, scale, 10
+    };
+    draw_bm_localmatrix(canvas, GRect::MakeXYWH(10, 10, w + extra, h), tex, mat1);
+    canvas->restore();
+    
+    canvas->save();
+    canvas->translate(0, h + 20);
+    const float mat2[] = {
+        scale, 0, 10,
+        0, scale, 10 + extra/2,
+    };
+    draw_bm_localmatrix(canvas, GRect::MakeXYWH(10, 10, w, h + extra), tex, mat2);
+    canvas->restore();
+    
+    canvas->save();
+    canvas->translate(w + 20, h + 20);
+    const float mat3[] = {
+        scale, 0, 10 + extra/2,
+        0, scale, 10 + extra/2,
+    };
+    draw_bm_localmatrix(canvas, GRect::MakeXYWH(10, 10, w + extra, h + extra), tex, mat3);
+    canvas->restore();
+}
+
+static void draw_regular_poly(GCanvas* canvas, int count, float cx, float cy, float radius,
+                              GShader* shader) {
+    GPoint* pts = new GPoint[count];
+    make_regular_poly(pts, count, cx, cy, radius);
+    canvas->shadeConvexPolygon(pts, count, shader);
+    delete[] pts;
+    delete shader;
+}
+
+static void draw_poly_shader(GCanvas* canvas, GShader* shader) {
+    draw_regular_poly(canvas, 7, 100, 100, 90, shader);
+}
+
+static void draw_poly_shaders(GCanvas* canvas) {
+    GBitmap tex;
+    tex.readFromFile("apps/spock.png");
+
+    for (int repeat = 0; repeat < 2; ++repeat) {
+        const float mat[] = {
+            0.75f, 0, -50,
+            0, 0.75f, -20,
+        };
+        draw_poly_shader(canvas, GShader::FromBitmap(tex, mat));
+
+        canvas->translate(200, 0);
+
+        const GColor colors[] = {
+            GColor::MakeARGB(1, 0, 1, 0), GColor::MakeARGB(1, 0, 0, 1)
+        };
+        const GPoint pts[] = {
+            GPoint::Make(0, 200), GPoint::Make(200, 0)
+        };
+        draw_poly_shader(canvas, GShader::FromLinearGradient(pts, colors));
+
+        canvas->translate(200, 400);
+        canvas->scale(-1, -1);
+    }
+}
+
+static void draw_radial(GCanvas* canvas) {
+    const GColor colors[] = {
+        GColor::MakeARGB(1, 1, 0, 1), GColor::MakeARGB(1, 0.2, 0.5, 0.2)
+    };
+    GShader* shader = GShader::FromRadialGradient(GPoint::Make(200, 200), 150, colors);
+    draw_regular_poly(canvas, 128, 200, 200, 150, shader);
+}
+
+static void draw_radial_quad(GCanvas* canvas) {
+    const GColor colors[] = {
+        GColor::MakeARGB(1, 0.9, 1, 0.9), GColor::MakeARGB(1, 0.1, 0.5, 0.1)
+    };
+    GShader* shader = GShader::FromRadialGradient(GPoint::Make(0, 0), 50, colors);
+    const GRect r = GRect::MakeLTRB(-50, -50, 50, 50);
+
+    canvas->scale(4, 4);
+
+    canvas->shadeRect(r, shader);
+    canvas->translate(100, 0);
+    canvas->shadeRect(r, shader);
+    canvas->translate(-100, 100);
+    canvas->shadeRect(r, shader);
+    canvas->translate(100, 0);
+    canvas->shadeRect(r, shader);
+
+    delete shader;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 const CS575DrawRec gDrawRecs[] = {
     { draw_solid_ramp,  256 * RAMP_W, 7*RAMP_H, "solid_ramp"    },
     { draw_blend_white, 200, 200,               "blend_white"   },
@@ -453,6 +592,13 @@ const CS575DrawRec gDrawRecs[] = {
     { draw_concat_scale_bitmap, DRAW_CONCAT_W, DRAW_CONCAT_H, "draw_concat_scale_bitmap" },
     { draw_concat_rotate,       DRAW_CONCAT_W, DRAW_CONCAT_H, "draw_concat_rotate" },
     { draw_concat_rotate_bitmap,DRAW_CONCAT_W, DRAW_CONCAT_H, "draw_concat_rotate_bitmap" },
+
+    { draw_grad_insets, 400, 400,               "gradient_insets" },
+    { draw_grad_insets_rot, 400, 400,           "gradient_insets_rot" },
+    { draw_bm_pad, 530, 500,                    "bitmap_shader_clamp" },
+    { draw_poly_shaders, 400, 400,              "poly_shaders" },
+    { draw_radial,      400, 400,               "radial" },
+    { draw_radial_quad, 400, 400,               "radial_quad" },
 
     { NULL, 0, 0, NULL    },
 };

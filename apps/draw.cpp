@@ -10,6 +10,7 @@
 #include "GColor.h"
 #include "GRandom.h"
 #include "GRect.h"
+#include "GShader.h"
 
 #include <cstdlib>
 #include <vector>
@@ -171,6 +172,92 @@ private:
     GBitmap fBM;
 };
 
+class GradientShape : public Shape {
+public:
+    GradientShape(const GColor& c0, const GColor& c1) : fColors{c0, c1} {
+        fRect = GRect::MakeXYWH(100, 100, 200, 100);
+        fA = 0.5f;
+    }
+    
+    virtual void onDraw(GCanvas* canvas) {
+        const GPoint pts[] = {
+            GPoint::Make(fRect.left(), fRect.top()),
+            GPoint::Make(fRect.right(), fRect.bottom()),
+        };
+        GColor colors[2]{ fColors[0], fColors[1] };
+        colors[0].fA *= fA * 2;
+        colors[1].fA *= fA * 2;
+        GShader* shader = GShader::FromLinearGradient(pts, colors);
+        if (shader) {
+            canvas->shadeRect(fRect, shader);
+            delete shader;
+        }
+    }
+    
+    virtual GRect getRect() { return fRect; }
+    virtual void setRect(const GRect& r) { fRect = r; }
+    virtual GColor getColor() { return GColor::MakeARGB(fA, 0, 0, 0); }
+    virtual void setColor(const GColor& c) {
+        fA = c.fA;
+    }
+
+private:
+    GRect   fRect;
+    GColor  fColors[2];
+    float   fA;
+};
+
+static void make_regular_poly(GPoint pts[], int count, float cx, float cy, float radius) {
+    float angle = 0;
+    const float deltaAngle = M_PI * 2 / count;
+    
+    for (int i = 0; i < count; ++i) {
+        pts[i].set(cx + cos(angle) * radius, cy + sin(angle) * radius);
+        angle += deltaAngle;
+    }
+}
+
+class RadialShape : public Shape {
+public:
+    RadialShape(const GColor& c0, const GColor& c1) : fColors{c0, c1} {
+        fRect = GRect::MakeXYWH(100, 100, 200, 100);
+        fA = 0.5f;
+
+        make_regular_poly(fPoly, GARRAY_COUNT(fPoly), 0, 0, 0.5);
+    }
+    
+    virtual void onDraw(GCanvas* canvas) {
+        canvas->save();
+        canvas->translate(fRect.x(), fRect.y());
+        canvas->scale(fRect.width(), fRect.height());
+        canvas->translate(0.5, 0.5);
+
+        GColor colors[2]{ fColors[0], fColors[1] };
+        colors[0].fA *= fA * 2;
+        colors[1].fA *= fA * 2;
+        GShader* shader = GShader::FromRadialGradient(GPoint::Make(0, 0), 1, colors);
+        if (shader) {
+            canvas->shadeConvexPolygon(fPoly, GARRAY_COUNT(fPoly), shader);
+            delete shader;
+        }
+        
+        canvas->restore();
+    }
+    
+    virtual GRect getRect() { return fRect; }
+    virtual void setRect(const GRect& r) { fRect = r; }
+    virtual GColor getColor() { return GColor::MakeARGB(fA, 0, 0, 0); }
+    virtual void setColor(const GColor& c) {
+        fA = c.fA;
+    }
+    
+private:
+    GRect   fRect;
+    GColor  fColors[2];
+    float   fA;
+    GPoint  fPoly[64];
+};
+
 static void alloc_bitmap(GBitmap* bm, int w, int h) {
     bm->fWidth = w;
     bm->fHeight = h;
@@ -238,7 +325,22 @@ protected:
                 this->requestDraw();
             }
         }
-
+        if ('d' == sym) {
+            fShape = new GradientShape(rand_color(), rand_color());
+            fList.push_back(fShape);
+            this->updateTitle();
+            this->requestDraw();
+            return true;
+        }
+        
+        if ('c' == sym) {
+            fShape = new RadialShape(rand_color(), rand_color());
+            fList.push_back(fShape);
+            this->updateTitle();
+            this->requestDraw();
+            return true;
+        }
+        
         if (fShape) {
             switch (sym) {
                 case XK_Left:

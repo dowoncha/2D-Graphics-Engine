@@ -458,12 +458,11 @@ void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, 
 		{
 			/* Lookup xy values from src bitmap */
 			auto Converted = InverseRect.ConvertPoint(GPoint{x, y});
-			int index = (int)Converted.x() + ((int)Converted.y()) * src.width();
-			GPixel SrcPixel = SrcPixels[index];
+			GPixel SrcPixel = *(src.getAddr( (int)Converted.x(), (int)Converted.y()));
 
 			DstPixels[(int)x] = Blend(SrcPixel, DstPixels[(int)x]);
 		}
-
+		/* Move onto the next row*/
 		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
 
 		LeftEdge.MoveCurrentX(1.0f);
@@ -530,31 +529,3 @@ void MyCanvas::DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color)
 		}
 	}
 }
-
-void MyCanvas::LookUpAddress(GPixel* Pixels, float x, float y, const GMatrix3x3f& InverseRect)
-{
-	return;
-}
-// void MyCanvas::CheckEdgeValues(const std::vector<GEdge>& Edges)
-// {
-//   for (const auto Edge: Edges)
-//     {
-//       if (Edge.GetTop() < 0 || Edge.GetBottom() < 0)
-// 	{
-// 	  std::cout << "Top or Bot is above bitmap " << Edge.ToString();
-// 	}
-//       if (Edge.GetTop() > BmpRect.height() || Edge.GetBottom() > BmpRect.height())
-// 	{
-// 	  std::cout <<"Top or Bot is below the bitmap " << Edge.ToString();
-// 	}
-//       if (Edge.GetCurrentX() < 0 || Edge.GetBottomX() < 0)
-// 	{
-// 	  std::cout << "Left Clip failure detected "  << Edge.ToString();
-// 	}
-//       if (Edge.GetCurrentX() > BmpRect.width() || Edge.GetBottomX() > BmpRect.width())
-// 	{
-// 	  std::cout << "Right clip failure " << Edge.ToString();
-// 	}
-//
-//     }
-// }
