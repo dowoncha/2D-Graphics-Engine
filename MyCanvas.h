@@ -83,7 +83,7 @@ public:
 	/* Draw the polygon using the container of edges to the input color*/
 	void DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color);
 
-	void LookUpAddress(GPixel* Pixels, float x, float y, const GMatrix3x3f& InverseRect);
+	static int clamp(int min, int value, int max);
 private:
 	const GBitmap Bitmap;
 	const GIRect BmpRect;

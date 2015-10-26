@@ -458,8 +458,10 @@ void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, 
 		{
 			/* Lookup xy values from src bitmap */
 			auto Converted = InverseRect.ConvertPoint(GPoint{x, y});
-			int index = (int)Converted.x() + ((int)Converted.y()) * src.width();
-			GPixel SrcPixel = SrcPixels[index];
+			int NewX = clamp(0, (int)Converted.x(), src.width() - 1);
+			int NewY = clamp(0, (int)Converted.y(), src.height() - 1);
+
+			GPixel SrcPixel = *(src.getAddr(NewX, NewY));
 
 			DstPixels[(int)x] = Blend(SrcPixel, DstPixels[(int)x]);
 		}
@@ -531,10 +533,10 @@ void MyCanvas::DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color)
 	}
 }
 
-void MyCanvas::LookUpAddress(GPixel* Pixels, float x, float y, const GMatrix3x3f& InverseRect)
-{
-	return;
+int MyCanvas::clamp(int min, int value, int max) {
+        return std::max(min, std::min(value, max));
 }
+
 // void MyCanvas::CheckEdgeValues(const std::vector<GEdge>& Edges)
 // {
 //   for (const auto Edge: Edges)
