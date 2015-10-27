@@ -45,13 +45,13 @@ public:
 	void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
 	//PA3
 	void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
-	//PA4
+
 	void save() override;
 	void restore() override;
 	void concat(const float matrix[6]) override;
-	//PA5
-	void shadeRect(const GRect& rect, GShader* shader);
-	void shadeConvexPolygon(const GPoint[], int count, GShader* shader);
+
+	void shadeRect(const GRect& rect, GShader* shader) override;
+	void shadeConvexPolygon(const GPoint[], int count, GShader* shader) override;
 
 	GMatrix3x3f GetCTM() { return MatrixStack.top(); }
 
