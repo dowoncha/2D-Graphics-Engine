@@ -32,6 +32,7 @@ std::vector<T> GMatrix<T>::GetRow(unsigned row) const
   if (row >= nRows) throw BoundsViolation();
 
   std::vector<T> Row;
+
   unsigned end = (row + 1) * nCols;
   for (unsigned i = row * nCols; i < end; ++i)
     Row.push_back(Matrix[i]);
@@ -147,7 +148,6 @@ GMatrix<T>& GMatrix<T>::operator/=(const T& a)
   return *this;
 }
 
-/* Find the dot product of two vectors */
 template<typename T>
 T GMatrix<T>::DotProduct(const std::vector<T>& a, const std::vector<T>& b)
 {
@@ -161,4 +161,5 @@ T GMatrix<T>::DotProduct(const std::vector<T>& a, const std::vector<T>& b)
   return product;
 }
 
+//CHECK: I need this for some reason idk why
 template class GMatrix<float>;
