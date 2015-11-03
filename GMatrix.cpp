@@ -1,165 +1,90 @@
-#include "GMatrix.h"
+ #include "GMatrix.h"
 
-/* Initialize rows and cols that are input, Set default value to row x cols*/
-template<typename T>
-GMatrix<T>::GMatrix(unsigned rows, unsigned cols)
-  : nRows(rows), nCols(cols), Matrix(rows * cols, T(0.0))
+GMatrix::GMatrix(const float in[6])
 {
+  Matrix[0] = in[0];
+  Matrix[1] = in[1];
+  Matrix[2] = in[2];
+  Matrix[3] = in[3];
+  Matrix[4] = in[4];
+  Matrix[5] = in[5];
+  Matrix[6] = 0.0f;
+  Matrix[7] = 0.0f;
+  Matrix[8] = 1.0f;
 }
 
-template<typename T>
-GMatrix<T>::GMatrix(unsigned rows, unsigned cols, std::initializer_list<T> Elements)
-  : nRows(rows), nCols(cols), Matrix(Elements)
+GMatrix GMatrix::MakeTranslationMatrix(float x, float y)
 {
+  float TransArray[6] = {1.0f, 0.0f , x, 0.0f, 1.0f, y};
+  return GMatrix(TransArray);
 }
 
-template<typename T>
-GMatrix<T>::GMatrix(unsigned rows, unsigned cols, std::vector<T> Elements)
-  : nRows(rows), nCols(cols), Matrix(Elements)
+GMatrix GMatrix::MakeScaleMatrix(float dx, float dy)
 {
+  float ScaleArray[6] = {dx, 0.0f, 0.0f, 0.0f, dy, 0.0f};
+  return GMatrix(ScaleArray);
 }
 
-template<typename T>
-void GMatrix<T>::SetZero()
+GMatrix GMatrix::MakeIdentityMatrix()
 {
-  std::fill(Matrix.begin(), Matrix.end(), T(0.0));
+  float Iden[6] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+  return GMatrix(Iden);
 }
 
-/* Get a vector of the values in the input row*/
-template<typename T>
-std::vector<T> GMatrix<T>::GetRow(unsigned row) const
+void GMatrix::convertPoint(GPoint& P) const
 {
-  if (row >= nRows) throw BoundsViolation();
+  //Get Converted X Y Points using dotproduct
+  auto NewX = Matrix[0] * P.x() + Matrix[1] * P.y() + Matrix[2];
+  auto NewY = Matrix[3] * P.x() + Matrix[4] * P.y() + Matrix[5];
 
-  std::vector<T> Row;
-
-  unsigned end = (row + 1) * nCols;
-  for (unsigned i = row * nCols; i < end; ++i)
-    Row.push_back(Matrix[i]);
-
-  return Row;
+  P.set(NewX, NewY);
 }
 
-template<typename T>
-std::vector<T> GMatrix<T>::GetCol(unsigned col) const
+GMatrix& GMatrix::concat(const GMatrix& InMat)
 {
-  if (col >= nCols) throw BoundsViolation();
+  float ConcatMat[9];
+  float Row[3];
+  float Col[3];
 
-  std::vector<T> Col;
-  for (unsigned i = col; i < Matrix.size(); i += nCols)
-    Col.push_back(Matrix[i]);
-
-  return Col;
-}
-
-template<typename T>
-void GMatrix<T>::Transpose()
-{
-  if (nRows != nCols) return;
-
-  /* Transpose the matrix*/
-  for (unsigned i = 0; i < nRows - 2; ++i)
-    for (unsigned j = i + 1; i < nRows - 1; ++j)
-      std::swap(Matrix.at(i * nRows + j), Matrix.at(j * nRows + i));
-}
-
-template<typename T>
-GMatrix<T> GMatrix<T>::operator+(const GMatrix<T>& a) const
-{
-  return GMatrix<T>(*this) += a;
-}
-
-template<typename T>
-GMatrix<T>& GMatrix<T>::ConcatIn(const GMatrix& a)
-{
-  if (nCols != a.NumRows()) throw SizeMismatchViolation();
-
-  /* Vector to hold final quantity. Should hold same amount*/
-  std::vector<T> Product;
-  for(unsigned i = 0; i < nRows; ++i)
+  int counter = 0;
+  for (int i = 0; i < 9; i += 3)
   {
-    auto row = GetRow(i);
-    for (unsigned j = 0; j < a.NumCols(); ++j)
+    Row[0] = Matrix[i];
+    Row[1] = Matrix[i + 1];
+    Row[2] = Matrix[i + 2];
+    for (int j = 0; j < 3; ++j, ++counter)
     {
-      auto col = a.GetCol(j);
-      Product.emplace_back(DotProduct(row, col));
+      Col[0] = InMat.Matrix[j];
+      Col[1] = InMat.Matrix[j + 3];
+      Col[2] = InMat.Matrix[j + 6];
+
+      ConcatMat[counter] = Row[0] * Col[0] + Row[1] * Col[1] + Row[2] * Col[2];
     }
   }
 
-  Matrix = Product;
+  Matrix = ConcatMat;
 
   return *this;
 }
 
-//
-// /* This multiply is causing alot of problems within inheritence Just going to add a concat*/
-// template<typename T>
-// GMatrix<T> GMatrix<T>::operator*(const GMatrix<T>& a) const
-// {
-//   if (nCols != a.NumRows()) throw SizeMismatchViolation();
-//
-//   /* Vector to hold final quantity. Should hold same amount*/
-//   std::vector<T> Product;
-//   for(unsigned i = 0; i < nRows; ++i)
-//   {
-//     auto row = GetRow(i);
-//     for (unsigned j = 0; j < a.NumCols(); ++j)
-//     {
-//       auto col = a.GetCol(j);
-//       Product.emplace_back(DotProduct(row, col));
-//     }
-//   }
-//
-//   return GMatrix<T>(nRows, a.NumCols(), Product);
-// }
-
-template<typename T>
-GMatrix<T> GMatrix<T>::operator*(const T& scalar) const
+GMatrix GMatrix::inverse()
 {
-  return GMatrix<T>(*this) *= scalar;
+  //CHECK: I want to change this but I dont know what I would use? using, typedef, define?
+  float a = Matrix[0], b = Matrix[1], c = Matrix[2];
+  float d = Matrix[3], e = Matrix[4], f = Matrix[5];
+  float g = Matrix[6], h = Matrix[7], i = Matrix[8];
+  //Calculate the determinant
+  float determinant = a * (e * i - f * h) - b * (d * i - f * g ) + c * (d * h - e * g );
+
+  float Inverse[9] = {
+    e * i - f * h,    c * h - b * i,      b * f - c * e,
+    f * g - d * i,    a * i - c * g,      c * d - a * f,
+    d * h - e * g,    b * g - a * h,      a * e - b * d
+  };
+
+  for (int i = 0; i < 9; ++i) {
+    Inverse[i] /= determinant;
+  }
+
+  return GMatrix(Inverse);
 }
-
-template<typename T>
-GMatrix<T>& GMatrix<T>::operator+=(const GMatrix<T>& a)
-{
-  if (nRows != a.NumRows() || nCols != a.NumCols()) throw SizeMismatchViolation();
-
-  for (unsigned i = 0; i < Matrix.size(); ++i)
-    Matrix[i] += a(i);
-
-  return *this;
-}
-
-template<typename T>
-GMatrix<T>& GMatrix<T>::operator*=(const T& a)
-{
-  for (auto& Element: Matrix)
-    Element *= a;
-
-  return *this;
-}
-
-template<typename T>
-GMatrix<T>& GMatrix<T>::operator/=(const T& a)
-{
-  for (auto& Element: Matrix)
-    Element /= a;
-
-  return *this;
-}
-
-template<typename T>
-T GMatrix<T>::DotProduct(const std::vector<T>& a, const std::vector<T>& b)
-{
-  if (a.size() != b.size()) throw SizeMismatchViolation();
-
-  T product = 0;
-
-  for (auto i = 0; i < a.size(); ++i)
-    product += a[i] * b[i];
-
-  return product;
-}
-
-//CHECK: I need this for some reason idk why
-template class GMatrix<float>;

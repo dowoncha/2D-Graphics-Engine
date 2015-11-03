@@ -2,6 +2,10 @@
 
 class MyShader : public GShader
 {
+private:
+  GMatrix LocalMatrix;
+  GMatrix Inverse;
+public:
   MyShader();
   ~MyShader();
 

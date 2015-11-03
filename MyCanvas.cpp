@@ -7,17 +7,13 @@ MyCanvas::MyCanvas(const GBitmap& bitmap):
 	Bitmap(bitmap),
 	BmpRect(GIRect::MakeWH(bitmap.width(), bitmap.height()))
 {
-		std::cout << "\nBmp W: " << bitmap.width() << " H: " << bitmap.height() << "\n";
-		/* Push the identity matrix onto the matrix stack */
-		MatrixStack.push(GMatrix3x3f::MakeIdentityMatrix());
+			/* Push the identity matrix onto the matrix stack */
+		MatrixStack.push(GMatrix::MakeIdentityMatrix());
 }
 
 MyCanvas::~MyCanvas() {	}
 
-/**
- * This function will create my implementation of a Canvas
- * and return it out.
- * */
+// This function will create my implementation of a Canvas and return it out.
 GCanvas* GCanvas::Create(const GBitmap& bitmap)
 {
 	//If the bitmap width, height are invalid, pixel pointer is null, or the rowbytes size does not match then return NULL
@@ -67,6 +63,7 @@ GPixel MyCanvas::Blend(const GPixel src, const GPixel dst)
   return GPixel_PackARGB(alpha, red, green, blue);
 
 }
+
 GPixel MyCanvas::ColorToPixel(const GColor color)
 {
     GColor pinned = color.pinToUnit();  //Make sure color is between 0 and 1
@@ -107,7 +104,7 @@ void MyCanvas::fillRect(const GRect& rect, const GColor& color)
 	//Convert all the points by the CTM
 	CTMPoints(Points);
 	//If the CTM does not preserve a rectangle then we draw a polygon instead
-	if (!MatrixStack.top().PreservesRect())
+	if (!MatrixStack.top().preservesRect())
 	{
 		fillDevicePolygon(Points, color);
 		return;
@@ -142,31 +139,28 @@ void MyCanvas::fillRect(const GRect& rect, const GColor& color)
 
 std::vector<GPoint> MyCanvas::QuadToPoints(const GRect& Rect)
 {
-	std::vector<GPoint> PreTransform(4);
-
-	/* Make 4 points from the rectangle*/
-	PreTransform[0] = GPoint::Make(Rect.x(), Rect.y());
-	PreTransform[1] = GPoint::Make(Rect.x() + Rect.width(), Rect.y());
-	PreTransform[2] = GPoint::Make(Rect.x(), Rect.y() + Rect.height());
-	PreTransform[3] = GPoint::Make(Rect.x() + Rect.width(), Rect.y() + Rect.height());
+	std::vector<GPoint> PreTransform({
+		GPoint::Make(Rect.x(), Rect.y()),
+	  GPoint::Make(Rect.x() + Rect.width(), Rect.y()),
+	  GPoint::Make(Rect.x(), Rect.y() + Rect.height()),
+	  GPoint::Make(Rect.x() + Rect.width(), Rect.y() + Rect.height())
+	});
 
 	return PreTransform;
 }
 
+//Finished
 void MyCanvas::CTMPoints(std::vector<GPoint>& Points)
 {
-	/* Get the CTM so we can modify it*/
-	/* GetCTM just returns MatrixStack.top(), however .top returns a reference */
-	/* I assume GetCTM would just return a copy though */
 	auto CTM = GetCTM();
 
 	/* Convert all points by the CTM*/
-	for (auto &Point: Points)
-	{
-		Point = CTM.ConvertPoint(Point);
+	for (auto &Point: Points) {
+		CTM.convertPoint(Point);
 	}
 }
 
+//Finished
 GRect MyCanvas::PointsToQuad(const std::vector<GPoint>& Points)
 {
 	assert(Points.size() == 4);
@@ -174,25 +168,24 @@ GRect MyCanvas::PointsToQuad(const std::vector<GPoint>& Points)
 	return GRect::MakeLTRB(Points[0].x(), Points[0].y(), Points[3].x(), Points[3].y());
 }
 
-GMatrix3x3f RectToRect(const GRect& src, const GRect& dst)
+GMatrix RectToRect(const GRect& src, const GRect& dst)
 {
 	// Make translation matrix of the source from the origin
-	auto SrcTranslate = GMatrix3x3f::MakeTranslationMatrix(
+	auto SrcTranslate = GMatrix::MakeTranslationMatrix(
 		-1 * src.left(), -1 * src.top()
 	);
 
 	// Make scale matrix of dx, dy. Dst / Src
-	auto Scale = GMatrix3x3f::MakeScaleMatrix(
+	auto Scale = GMatrix::MakeScaleMatrix(
 		dst.width() / src.width(),
 		dst.height() / src.height()
 	);
 
 	// Get tranlsation matrix of the dst rectangle
-	auto DstTranslate = GMatrix3x3f::MakeTranslationMatrix(dst.left(), dst.top());
+	auto DstTranslate = GMatrix::MakeTranslationMatrix(dst.left(), dst.top());
 
 	// Concatenate the 3 matrices. DstTranslate * Scale * SrcTranslate
-	DstTranslate.concat(Scale);
-	DstTranslate.concat(SrcTranslate);
+	DstTranslate.concat(Scale).concat(SrcTranslate);
 
 	return DstTranslate;
 }
@@ -210,9 +203,9 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 	/* Get current CTM and concat the rect to rect onto it*/
 	auto CTM = GetCTM();
 	/* Concat the */
-	CTM.ConcatIn(Src2Dst);
+	CTM.concat(Src2Dst);
 	/* Send the inverse of the converson matrix and converted points for drawing*/
-	fillDeviceBitmap(src, Points, CTM.GetInverse());
+	fillDeviceBitmap(src, Points, CTM.inverse());
 }
 
 void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const GColor& color)
@@ -227,7 +220,7 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const G
 /* Assumptions: Vector of points coming in should be in device coordinates (i.e. already converted by the CTM)
  * The InverseRect coming in should be (CTM * R2R)^-1
  **/
-void MyCanvas::fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix3x3f& InverseRect)
+void MyCanvas::fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix& InverseRect)
 {
 		SortPointsForConvex(Points);								// Sort the points for convex edge creation
 		auto Edges = MakeConvexEdges(Points);				// Create Edges from the sorted points
@@ -269,56 +262,20 @@ void MyCanvas::concat(const float matrix[6])
 	auto& CTM = MatrixStack.top();	//We get a reference to the CTM here to modify it
 
 	/* Make a new matrix using the input matrix values*/
-	GMatrix3x3f ConcatMatrix = GMatrix3x3f::MakeMatrix({matrix[0], matrix[1], matrix[2],
-	 																						 				matrix[3], matrix[4], matrix[5],
-																							 				0, 0, 1 });
-	CTM.concat(ConcatMatrix);				//Concat the input matrix onto the CTM
+	CTM.concat(GMatrix(matrix));				//Concat the input matrix onto the CTM
 }
 
 void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
 {
-	/* Sort Points by y and then x if they are equal */
-	std::sort(Points.begin(), Points.end(), [](const GPoint& a, const GPoint& b) -> bool{
-		return ( std::fabs(a.y() - b.y() ) < .0001) ? a.x() > b.x() : a.y() < b.y();
+  std::sort(Points.begin(), Points.end(), [] (const GPoint& a, const GPoint& b) {
+		return a.y() < b.y();
 	});
 
-	/* At this points points are sorted top to bottom, right to left */
-
-	std::queue<GPoint> RightPoints;			//Queue to hold all Points right of the pivot
-	std::stack<GPoint> LeftPoints;			//Stack to hold all Points left of the pivot
-
-	/* Start from 2nd value because top is the pivot */
-	for (auto Point = Points.begin() + 1; Point != Points.end() - 1; ++Point)
-	{
-		/* If the x value of the Point is greater than or equal to the top point x*/
-		if ( Point->x() >= Points.front().x())
-			RightPoints.push(*Point);		//Add to right queue
-		else
-			LeftPoints.push(*Point);		//Add to left stack
-	}
-
-	/* We store the value of RightPoints to get a proper increment later */
-	const auto RightSize = RightPoints.size();
-
-	/* Points: Order Diagram - TopPivot, RightPoints ... RightPoints.end() - 1, BottomPivot, LeftPoints ... LeftPoints.end() */
-	for (auto Point = Points.begin() + 1; !RightPoints.empty(); ++Point)
-	{
-		*Point = RightPoints.front();
-		RightPoints.pop();
-	}
-
-	/* Set the middle point to be the bottom most point */
-	Points[RightSize + 1] = Points.back();
-
-	/* If the LeftPoints are not empty store them*/
-	for (auto i = RightSize + 2; !LeftPoints.empty(); ++i)
-	{
-		Points[i] = LeftPoints.top();					//Copy over from left stack
-		LeftPoints.pop();											//Pop from left points
-	}
+	std::sort(Points.begin(), Points.end(), [](const GPoint& a, const GPoint& b) {
+		return a.x() > b.x();
+	});
 }
 
-/* This will convert the vector of input points i */
 std::vector<GEdge> MyCanvas::MakeConvexEdges(const std::vector<GPoint>& Points)
 {
 	std::vector<GEdge> Edges;							//Will hold the edges
@@ -454,7 +411,7 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
 	}
 }
 
-void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect)
+void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix& InverseRect)
 {
 	if (Edges.size() < 2)
 	{
@@ -489,8 +446,8 @@ void MyCanvas::DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, 
 		for ( float x = LeftEdge.GetCurrentX() + .5; x < RightEdge.GetCurrentX(); x += 1.0f)
 		{
 			// Lookup x y values from src bitmap
-			// CHECK: Can i use list_initializer here GPoint{x,y} vs GPoint::Make(x, y)
-			auto Converted = InverseRect.ConvertPoint(GPoint{x, y});
+			GPoint Converted = GPoint::Make(x, y);
+			InverseRect.convertPoint(Converted);
 			// Clamp the lookup values to catch imprecision errors
 			int NewX = clamp(0, (int)Converted.x(), src.width() - 1);
 			int NewY = clamp(0, (int)Converted.y(), src.height() - 1);

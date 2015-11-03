@@ -21,7 +21,7 @@
 #include "GColor.h"
 #include "GRect.h"
 #include "GEdge.h"
-#include "GMatrix3x3.h"
+#include "GMatrix.h"
 
 #define GETA(a)    		  GPixel_GetA(a)
 #define GETR(a)    		  GPixel_GetR(a)
@@ -53,7 +53,7 @@ public:
 	void shadeRect(const GRect& rect, GShader* shader) override;
 	void shadeConvexPolygon(const GPoint[], int count, GShader* shader) override;
 
-	GMatrix3x3f GetCTM() { return MatrixStack.top(); }
+	GMatrix GetCTM() { return MatrixStack.top(); }
 
 	/* Convert input Quad into points*/
 	static std::vector<GPoint> QuadToPoints(const GRect& Rect);
@@ -84,16 +84,16 @@ public:
 	void ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges);
 
 	/* Points coming into these should be converted by CTM already. This will make the edges, clip, then draw*/
-	void fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix3x3f& InverseRect);
+	void fillDeviceBitmap(const GBitmap& src, std::vector<GPoint> Points, const GMatrix& InverseRect);
 	void fillDevicePolygon(std::vector<GPoint> Points, const GColor& color);
 
 	/* Draw the input bitmap into a polygon, InverseRect is the (CTM * R2R) ^ -1 */
-	void DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix3x3f& InverseRect);
+	void DrawBitmapPolygon(std::vector<GEdge>& Edges, const GBitmap& src, const GMatrix& InverseRect);
 	void DrawPolygon(std::vector<GEdge>& Edges, const GPixel& Color);
 
 	static int clamp(int min, int value, int max);
 private:
 	const GBitmap Bitmap;
 	const GIRect BmpRect;
-	std::stack<GMatrix3x3f> MatrixStack;
+	std::stack<GMatrix> MatrixStack;
 };
