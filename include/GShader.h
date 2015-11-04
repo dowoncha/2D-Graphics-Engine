@@ -47,7 +47,7 @@ public:
      *  the parameters are not valid.
      */
     static GShader* FromLinearGradient(const GPoint pts[2], const GColor colors[2]);
-    
+
     /**
      *  Return a subclass of GShader that draws the specified radial gradient. Returns NULL if
      *  the parameters are not valid.

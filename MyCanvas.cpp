@@ -64,6 +64,7 @@ GPixel MyCanvas::Blend(const GPixel src, const GPixel dst)
 
 }
 
+
 GPixel MyCanvas::ColorToPixel(const GColor color)
 {
     GColor pinned = color.pinToUnit();  //Make sure color is between 0 and 1
@@ -149,7 +150,6 @@ std::vector<GPoint> MyCanvas::QuadToPoints(const GRect& Rect)
 	return PreTransform;
 }
 
-//Finished
 void MyCanvas::CTMPoints(std::vector<GPoint>& Points)
 {
 	auto CTM = GetCTM();
@@ -160,7 +160,6 @@ void MyCanvas::CTMPoints(std::vector<GPoint>& Points)
 	}
 }
 
-//Finished
 GRect MyCanvas::PointsToQuad(const std::vector<GPoint>& Points)
 {
 	assert(Points.size() == 4);
@@ -265,15 +264,116 @@ void MyCanvas::concat(const float matrix[6])
 	CTM.concat(GMatrix(matrix));				//Concat the input matrix onto the CTM
 }
 
+void shadeRect(const GRect& rect, GShader* shader)
+{
+
+}
+
+void shadeConvexPolygon(const GPoint[] points, int count, GShader* shader)
+{
+	std::vector<GPoint> Points(points, points + count);
+	CTMPoints(Points);
+	float ctm[6];
+	GetCTM().GetTwoRows(ctm);
+	if (!(shader->SetContext(ctm))) {
+		std::printf("CTM set context failed\n");
+		return;
+	}
+
+	SortPointsForConvex(Points);
+	auto Edges = MakeConvexEdges(Points);
+	ClipEdges(Edges);
+
+	if (Edges.size() < 2)
+	{
+		std::cout << "Edges has less than 3 values\n";
+		return;
+	}
+
+	// Sort the edges from top to bottom, left to right
+	std::sort(Edges.begin(), Edges.end());
+
+	// The first two edges will be the top most edges
+	GEdge LeftEdge = Edges[0];
+	GEdge RightEdge = Edges[1];
+
+	/* Move DstPixels to y offset.*/
+	GPixel *DstPixels = Bitmap.pixels();
+	/* Offset the pixel pointer to the proper row*/
+	DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes() * LeftEdge.GetTop());
+
+	int EdgeCounter = 2;
+	GPixel *row;
+	for (int y = LeftEdge.GetTop(); y < Edges.back().GetBottom(); ++y)
+	{
+		float x0 = LeftEdge.GetCurrentX() + .5;
+		float x1 = RightEdge.GetCurrentX();
+		int count = (int)(x1 - x0);
+		row = new GPixel[count];
+
+		shader->shadeRow((int)x0, y, count, row );
+
+		delete[] row;  //Free the Pixel row since it was dynamically allocated
+
+		// Move left and right edges currentX to next row
+		LeftEdge.MoveCurrentX(1.0f);
+		RightEdge.MoveCurrentX(1.0f);
+
+		/* Check left edge to see if y has passed bottom and we have not reached max edges */
+		if (y > LeftEdge.GetBottom() && EdgeCounter < Edges.size())
+		{
+				LeftEdge = Edges[EdgeCounter];
+				++EdgeCounter;
+		}
+		if (y > RightEdge.GetBottom() && EdgeCounter < Edges.size())
+		{
+				RightEdge = Edges[EdgeCounter];
+				++EdgeCounter;
+		}
+	}
+}
+
 void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
 {
-  std::sort(Points.begin(), Points.end(), [] (const GPoint& a, const GPoint& b) {
-		return a.y() < b.y();
+	/* Sort Points by y and then x if they are equal */
+	std::sort(Points.begin(), Points.end(), [](const GPoint& a, const GPoint& b) -> bool{
+		return ( std::fabs(a.y() - b.y() ) < .0001) ? a.x() > b.x() : a.y() < b.y();
 	});
 
-	std::sort(Points.begin(), Points.end(), [](const GPoint& a, const GPoint& b) {
-		return a.x() > b.x();
-	});
+	/* At this points points are sorted top to bottom, right to left */
+
+	std::queue<GPoint> RightPoints;			//Queue to hold all Points right of the pivot
+	std::stack<GPoint> LeftPoints;			//Stack to hold all Points left of the pivot
+
+	/* Start from 2nd value because top is the pivot */
+	for (auto Point = Points.begin() + 1; Point != Points.end() - 1; ++Point)
+	{
+		/* If the x value of the Point is greater than or equal to the top point x*/
+		if ( Point->x() >= Points.front().x())
+			RightPoints.push(*Point);		//Add to right queue
+		else
+			LeftPoints.push(*Point);		//Add to left stack
+	}
+
+	/* We store the value of RightPoints to get a proper increment later */
+	const auto RightSize = RightPoints.size();
+
+	/* Points: Order Diagram - TopPivot, RightPoints ... RightPoints.end() - 1, BottomPivot, LeftPoints ... LeftPoints.end() */
+	for (auto Point = Points.begin() + 1; !RightPoints.empty(); ++Point)
+	{
+		*Point = RightPoints.front();
+		RightPoints.pop();
+	}
+
+	/* Set the middle point to be the bottom most point */
+	Points[RightSize + 1] = Points.back();
+
+	/* If the LeftPoints are not empty store them*/
+	for (auto i = RightSize + 2; !LeftPoints.empty(); ++i)
+	{
+		Points[i] = LeftPoints.top();					//Copy over from left stack
+		LeftPoints.pop();											//Pop from left points
+	}
 }
 
 std::vector<GEdge> MyCanvas::MakeConvexEdges(const std::vector<GPoint>& Points)

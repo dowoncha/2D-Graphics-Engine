@@ -27,7 +27,7 @@
 #define GETR(a)    		  GPixel_GetR(a)
 #define GETG(a)    		  GPixel_GetG(a)
 #define GETB(a)    		  GPixel_GetB(a)
-#define COLORBYTE         uint8_t
+#define COLORBYTE       uint8_t
 
 class MyCanvas : public GCanvas
 {
@@ -41,9 +41,7 @@ public:
 	/** Fill the entire canvas with the specified color, using SRC porter-duff mode. **/
 	void clear(const GColor& color) override;
 	void fillRect(const GRect&, const GColor&) override;
-	//PA2
 	void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
-	//PA3
 	void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
 
 	void save() override;
@@ -51,7 +49,7 @@ public:
 	void concat(const float matrix[6]) override;
 
 	void shadeRect(const GRect& rect, GShader* shader) override;
-	void shadeConvexPolygon(const GPoint[], int count, GShader* shader) override;
+	void shadeConvexPolygon(const GPoint[] points, int count, GShader* shader) override;
 
 	GMatrix GetCTM() { return MatrixStack.top(); }
 

@@ -2,32 +2,31 @@
 
 GMatrix::GMatrix(const float in[6])
 {
-  Matrix[0] = in[0];
-  Matrix[1] = in[1];
-  Matrix[2] = in[2];
-  Matrix[3] = in[3];
-  Matrix[4] = in[4];
-  Matrix[5] = in[5];
-  Matrix[6] = 0.0f;
-  Matrix[7] = 0.0f;
-  Matrix[8] = 1.0f;
+  for (int i = 0; i < 6; ++i) {
+    Matrix[i] = in[i];
+  }
+
+  Matrix[6] = 0.0f; Matrix[7] = 0.0f; Matrix[8] = 1.0f;
 }
 
 GMatrix GMatrix::MakeTranslationMatrix(float x, float y)
 {
-  float TransArray[6] = {1.0f, 0.0f , x, 0.0f, 1.0f, y};
+  float TransArray[6] = {1.0f, 0.0f, x,
+                         0.0f, 1.0f, y};
   return GMatrix(TransArray);
 }
 
 GMatrix GMatrix::MakeScaleMatrix(float dx, float dy)
 {
-  float ScaleArray[6] = {dx, 0.0f, 0.0f, 0.0f, dy, 0.0f};
+  float ScaleArray[6] = {dx, 0.0f, 0.0f,
+                         0.0f, dy, 0.0f};
   return GMatrix(ScaleArray);
 }
 
 GMatrix GMatrix::MakeIdentityMatrix()
 {
-  float Iden[6] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+  float Iden[6] = {1.0f, 0.0f, 0.0f,
+                   0.0f, 1.0f, 0.0f};
   return GMatrix(Iden);
 }
 
