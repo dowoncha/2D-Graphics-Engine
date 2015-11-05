@@ -16,16 +16,21 @@ bool RadialShader::setContext(const float ctm[6])
 
 void RadialShader::shadeRow(int x, int y, int count, GPixel row[])
 {
-  //Begin Loop
+  float srcX = x + .5;
+  float srcY = y + .5;
 
- //If a radial use sqrt(SrcX^2 + SrcY^2)
+  for ( int i = 0; i < count; ++i)
+  {
+    float t = std::sqrt(srcX * srcX+ srcY * srcY);
 
- //LERP
+    t = Utility::clamp(0.0f, t, 1.0f);
+    t = Utility::lerp(0.0f, radius, t);
 
- //When we loop instead of recalculating Inverse we can add a and to x and y
- //Sx += a , Sy += d
+    Sx += 2;
+    Sy += 2;    //Temporarys
 
- //End loop
+    //Sx += a, Sy += d
+  }
 }
 
 GShader* GShader::FromRadialGradient(const GPoint& center, float radius, const GColor colors[2])
