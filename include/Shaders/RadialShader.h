@@ -12,7 +12,9 @@ class RadialShader : public GShader
 private:
     const GPoint center;
     float radius;
-    std::array<GColor, 2> colors;
+    GColor c0, c1;
+    GMatrix LocalMatrix;
+    GMatrix Inverse;
 public:
   RadialShader(const GPoint& center, float radius, const GColor colors[2]);
   ~RadialShader();

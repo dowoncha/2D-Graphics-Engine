@@ -13,6 +13,7 @@ public:
 
   static GMatrix MakeTranslationMatrix(float x, float y);   //Creates a translation matrix from the input values
   static GMatrix MakeScaleMatrix(float dx, float dy);       //Creates a scale matrix from input scale values
+  static GMatrix MakeMatrix(const float in[6]);
 
   void convertPoint(GPoint& P) const;      //Convert's input point by the current matrix
   void convertPoint(float& x, float& y) const;

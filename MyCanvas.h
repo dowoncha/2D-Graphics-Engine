@@ -66,26 +66,17 @@ public:
 
 	/* These functions tend to use vectors and stl containers more because
 	 * they are not limited by the GCanvas function definitions */
-
-	//Get the local conversion matrix from src rect to the dst rect
-	static GMatrix RectToRect(const GRect& src, const GRect& dst);
-	// Convert input Quad into points
-	static std::vector<GPoint> QuadToPoints(const GRect& Rect);
 	// Convert input points by the CTM
 	void CTMPoints(std::vector<GPoint>& Points) const;
-	// Convert input points into a quad
-	static GRect PointsToQuad(const std::vector<GPoint>& Points);
 	// Multiply Divide multiply again by 255 and round 2 Colors into another
   static unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);
 	// Blends two Pixel's into a new pixel
 	GPixel Blend(const GPixel src, const GPixel dst);
 	//Blend an entire row of pixels
 	void BlendRow(GPixel *Dst, int startX, GPixel row[], int count);
-	// Converts the input color and returns a premultiplied and converted to GPixel value
-	static GPixel ColorToPixel(const GColor color);
+
 	// Sort the points for the convex
 	static void SortPointsForConvex(std::vector<GPoint>& Points);
-
 	// This will take a set of points and make them into edges for a convex polygon
 	static std::vector<GEdge> MakeConvexEdges(const std::vector<GPoint>& Points);
 

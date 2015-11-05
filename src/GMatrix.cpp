@@ -38,6 +38,11 @@ GMatrix GMatrix::MakeScaleMatrix(float dx, float dy)
   return GMatrix(ScaleArray);
 }
 
+GMatrix GMatrix::MakeMatrix(const float in[6])
+{
+  return GMatrix(in);
+}
+
 void GMatrix::convertPoint(GPoint& P) const
 {
   //Get Converted X Y Points using dotproduct

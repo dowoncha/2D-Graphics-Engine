@@ -1,10 +1,17 @@
 #pragma once
 
+#include <vector>
 #include <cmath>
+#include <assert.h>
+
+#include "GPixel.h"
+#include "GColor.h"
+#include "GPoint.h"
+#include "GMatrix.h"
+#include "GRect.h"
 
 namespace Utility
 {
-
 template<typename T>
 inline T clamp(T min, T value, T max) {
         return std::max(min, std::min(value, max));
@@ -19,6 +26,14 @@ inline int round(float a)
 {
   return (int)std::floor(a + .5);
 }
+
+GPixel ColorToPixel(const GColor color);
+
+std::vector<GPoint> QuadToPoints(const GRect& Rect);
+
+GRect PointsToQuad(const std::vector<GPoint>& Points);
+
+GMatrix RectToRect(const GRect& src, const GRect& dst);
 
 // 1. Clamp Min(max(0,t), 1)
 // 2. t - floor(t)

@@ -48,7 +48,6 @@ GPixel MyCanvas::Blend(const GPixel src, const GPixel dst)
 	blue = Utility::clamp((COLORBYTE)0, blue, alpha);
 
   return GPixel_PackARGB(alpha, red, green, blue);
-
 }
 
 void MyCanvas::BlendRow(GPixel *Dst, int startX, GPixel row[], int count)
@@ -59,18 +58,6 @@ void MyCanvas::BlendRow(GPixel *Dst, int startX, GPixel row[], int count)
 	}
 }
 
-GPixel MyCanvas::ColorToPixel(const GColor color)
-{
-    GColor pinned = color.pinToUnit();  //Make sure color is between 0 and 1
-
-    float fA =  pinned.fA * 255.9999;		//Convert from 0-1 to 0-255
-    COLORBYTE uA = (COLORBYTE) fA;
-    COLORBYTE uR = (COLORBYTE) (pinned.fR * fA);  //Multiply rgb values by the new alpha
-    COLORBYTE uG = (COLORBYTE) (pinned.fG * fA);
-    COLORBYTE uB = (COLORBYTE) (pinned.fB * fA);
-
-    return GPixel_PackARGB(uA, uR, uG, uB);		//Returned the packed pixel
-}
 /**
  * This function will clear the canvas according to the color.
  * Don't use a shader here for efficiency
@@ -79,7 +66,7 @@ void MyCanvas::clear(const GColor& color)
 {
   //Get the start of the bitmap _Pixels array
   GPixel* DstPixels = Bitmap.pixels();
-  GPixel pColor = ColorToPixel(color);     //Convert input color into a pixel
+  GPixel pColor = Utility::ColorToPixel(color);     //Convert input color into a pixel
 
   for (int y = 0; y < Bitmap.height(); ++y)
     {
@@ -90,19 +77,6 @@ void MyCanvas::clear(const GColor& color)
 
       DstPixels = (GPixel*) ((char*)DstPixels + Bitmap.rowBytes());
     }
-}
-
-std::vector<GPoint> MyCanvas::QuadToPoints(const GRect& Rect)
-{
-	//Convert the input rect into a vector with 4 point corners
-	std::vector<GPoint> PreTransform({
-		GPoint::Make(Rect.x(), Rect.y()),
-	  GPoint::Make(Rect.x() + Rect.width(), Rect.y()),
-	  GPoint::Make(Rect.x(), Rect.y() + Rect.height()),
-	  GPoint::Make(Rect.x() + Rect.width(), Rect.y() + Rect.height())
-	});
-
-	return PreTransform;
 }
 
 void MyCanvas::fillRect(const GRect& rect, const GColor& color)
@@ -120,7 +94,7 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 	assert(!dst.isEmpty());
 
 	/* Get the matrix of the conversion from src to dst rect */
-	const GMatrix LocalMatrix = RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
+	const GMatrix LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
 
 	float localArr[6];
 	LocalMatrix.GetTwoRows(localArr);
@@ -142,7 +116,7 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const G
 
 void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 {
-	auto Points = QuadToPoints(rect);  //Convert input rectangle into points
+	auto Points = Utility::QuadToPoints(rect);  //Convert input rectangle into points
 
 	CTMPoints(Points);  //Convert the points by the CTM
 
@@ -153,7 +127,7 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 	}
 
 	//Convert the CTM'd points back into a rect since we know it preserves it
-	auto ConvertedRect = PointsToQuad(Points).round();
+	auto ConvertedRect = Utility::PointsToQuad(Points).round();
 
 	// Make sure rect is not an empty one and clip the edes from the bitmap with intersect
   if (ConvertedRect.isEmpty() || !ConvertedRect.intersect(BmpRect)) {
@@ -262,6 +236,9 @@ void MyCanvas::shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader)
 	}
 }
 
+/************************************************************************/
+//Current Transformation Functions
+
 void MyCanvas::save()
 {
 	MatrixStack.push(MatrixStack.top());	//Push a copy of the CTM onto the stack
@@ -293,34 +270,8 @@ void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
 	}
 }
 
-GRect MyCanvas::PointsToQuad(const std::vector<GPoint>& Points)
-{
-	assert(Points.size() == 4);
-	/* Return */
-	return GRect::MakeLTRB(Points[0].x(), Points[0].y(), Points[3].x(), Points[3].y());
-}
-
-GMatrix MyCanvas::RectToRect(const GRect& src, const GRect& dst)
-{
-	// Make translation matrix of the source from the origin
-	auto SrcTranslate = GMatrix::MakeTranslationMatrix(
-		-1 * src.left(), -1 * src.top()
-	);
-
-	// Make scale matrix of dx, dy. Dst / Src
-	auto Scale = GMatrix::MakeScaleMatrix(
-		dst.width() / src.width(),
-		dst.height() / src.height()
-	);
-
-	// Get tranlsation matrix of the dst rectangle
-	auto DstTranslate = GMatrix::MakeTranslationMatrix(dst.left(), dst.top());
-
-	// Concatenate the 3 matrices. DstTranslate * Scale * SrcTranslate
-	DstTranslate.concat(Scale).concat(SrcTranslate);
-
-	return DstTranslate;
-}
+/************************************************************************/
+//Edge creation functions
 
 void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
 {
