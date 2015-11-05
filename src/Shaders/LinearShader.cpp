@@ -1,10 +1,5 @@
 #include "Shaders/LinearShader.h"
 
-LinearShader::LinearShader()
-{
-
-}
-
 LinearShader::LinearShader(const GPoint pts[2], const GColor colors[2])
  : p0(pts[0]), p1(pts[2]), c0(colors[0]), c1(colors[1])
 {
@@ -30,18 +25,13 @@ bool LinearShader::setContext(const float ctm[6])
 void LinearShader::shadeRow(int x, int y, int count, GPixel row[])
 {
   float srcX = x + .5;
-  float srcY = y + .5
-
-  srcX = pin_unit(srcX);
-  srcY = pin_unit(srcY);
+  float srcY = y + .5;
 
   int i = 0;
   const int end = x + count;
-  GPoint ConvertedPoint;
-  for ( ; srcX < end; srcX += 1.0f)
+
+  for (int i = 0; i < count; ++i)
   {
-    ConvertedPoint.set(srcX, srcY);
-    Inverse.convertPoint(ConvertedPoint);
     row[i] = 0;
   }
  //Begin Loop

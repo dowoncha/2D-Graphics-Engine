@@ -21,8 +21,12 @@ bool GEdge::operator<(const GEdge& c) const
 {
 	if (nTop != c.nTop)				//Check the tops first
 		return nTop < c.nTop;			//Return which top is higher up
+	//else if (std::fabs(fCurrentX - c.fCurrentX) > .5)
+	//	return fCurrentX < c.fCurrentX;
+	//else if (std::fabs(fSlope - c.fSlope) > .5)
+	//	return fSlope < c.fSlope;
 	else
-		return fCurrentX + fSlope < c.fCurrentX + c.fSlope;	//Finally check the current x location
+		return fCurrentX + fSlope < c.fCurrentX + c.fSlope;
 }
 
 bool GEdge::PinTopAndBot(const int& Height)

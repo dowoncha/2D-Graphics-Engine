@@ -1,7 +1,7 @@
 #include "Shaders/RadialShader.h"
 
 RadialShader::RadialShader(const GPoint& c, float r, const GColor col[2])
- : center(c), radius(r), colors(col)
+ : center(c), radius(r), colors({col[0], col[1]})
 {
 }
 
@@ -26,8 +26,8 @@ void RadialShader::shadeRow(int x, int y, int count, GPixel row[])
     t = Utility::clamp(0.0f, t, 1.0f);
     t = Utility::lerp(0.0f, radius, t);
 
-    Sx += 2;
-    Sy += 2;    //Temporarys
+    //Sx += 2;
+    //Sy += 2;    //Temporarys
 
     //Sx += a, Sy += d
   }

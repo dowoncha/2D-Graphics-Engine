@@ -65,7 +65,7 @@ GPixel MyCanvas::ColorToPixel(const GColor color)
 
     float fA =  pinned.fA * 255.9999;		//Convert from 0-1 to 0-255
     COLORBYTE uA = (COLORBYTE) fA;
-    COLORBYTE uR = (COLORBYTE) (pinned.fR * fA);
+    COLORBYTE uR = (COLORBYTE) (pinned.fR * fA);  //Multiply rgb values by the new alpha
     COLORBYTE uG = (COLORBYTE) (pinned.fG * fA);
     COLORBYTE uB = (COLORBYTE) (pinned.fB * fA);
 
@@ -73,6 +73,7 @@ GPixel MyCanvas::ColorToPixel(const GColor color)
 }
 /**
  * This function will clear the canvas according to the color.
+ * Don't use a shader here for efficiency
  * */
 void MyCanvas::clear(const GColor& color)
 {
@@ -93,6 +94,7 @@ void MyCanvas::clear(const GColor& color)
 
 std::vector<GPoint> MyCanvas::QuadToPoints(const GRect& Rect)
 {
+	//Convert the input rect into a vector with 4 point corners
 	std::vector<GPoint> PreTransform({
 		GPoint::Make(Rect.x(), Rect.y()),
 	  GPoint::Make(Rect.x() + Rect.width(), Rect.y()),
@@ -140,11 +142,11 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const G
 
 void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 {
-	auto Points = QuadToPoints(rect);
+	auto Points = QuadToPoints(rect);  //Convert input rectangle into points
 
-	CTMPoints(Points);
+	CTMPoints(Points);  //Convert the points by the CTM
 
-	if ( !MatrixStack.top().preservesRect())
+	if ( !MatrixStack.top().preservesRect())  //If the CTM does not keep rectangular shape we draw a polygon
 	{
 		shadeDevicePolygon(Points, shader);
 		return;
@@ -158,12 +160,14 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
       return;
 	}
 
+	//Get bitmap pixel start address
 	GPixel* DstPixels = Bitmap.pixels();
+	//Go to the start row of the rectangle
 	DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes() * ConvertedRect.top());
 
 	float CTM[6];
 	MatrixStack.top().GetTwoRows(CTM);
-
+	//Set the Context for the input shader
 	shader->setContext(CTM);
 
 	int count = ConvertedRect.right() - ConvertedRect.left();
@@ -217,17 +221,28 @@ void MyCanvas::shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader)
 
 	shader->setContext(CTM);
 	int EdgeCounter = 2;
-	GPixel* row;
 	for (int y = LeftEdge.top(); y < Edges.back().bottom(); ++y)
 	{
 		int startX = Utility::round(LeftEdge.currentX());
-		int count = Utility::round(RightEdge.currentX()) - startX;
+		int count = Utility::round(RightEdge.currentX() - LeftEdge.currentX());
+		count = Utility::clamp(1, count, Bitmap.width());
 
-		row = new GPixel[count];	      //Allocate array for the row
-		shader->shadeRow(startX, y, count, row);
-		BlendRow(DstPixels, startX, row, count);
+		if (count <= 0)
+		{
+			std::printf("Edge 1: Top: %d X: %f Slope: %f\n", LeftEdge.top(), LeftEdge.currentX(), LeftEdge.slope());
+			std::printf("Edge 2: Top: %d X: %f Slope: %f\n", RightEdge.top(), RightEdge.currentX(), RightEdge.slope());
+			return;
+		}
 
-		delete[] row;  //Free the Pixel row since it was dynamically allocated
+		if (count > 0)
+		{
+			GPixel *row = new GPixel[count];	      //Allocate array for the row
+			shader->shadeRow(startX, y, count, row);
+			BlendRow(DstPixels, startX, row, count);
+			delete[] row;  //Free the Pixel row since it was dynamically allocated
+		}
+
+		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
 
 		// Move left and right edges currentX to next row
 		LeftEdge.MoveCurrentX(1.0f);
@@ -386,12 +401,10 @@ void MyCanvas::ClipEdgesTopAndBottom(std::vector<GEdge>& Edges) const
 	{
 		/* Pin the top and bottom of the edges that are out of bitmap vertical*/
 		/* Will return false if the value needs to be removed*/
-		if ( !Edge->PinTopAndBot(height) )
-		{
+		if ( !Edge->PinTopAndBot(height) ) {
 			Edge = Edges.erase(Edge);	//Remove all horizontal edges, and edges off screen
 		}
-		else
-		{
+		else {
 			++Edge;		//If we don't remove a value then we increment the iterator
 		}
 	}

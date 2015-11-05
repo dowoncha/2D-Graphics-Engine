@@ -22,19 +22,18 @@ bool BitmapShader::setContext(const float ctm[6])
 void BitmapShader::shadeRow(int x, int y, int count, GPixel row[])
 {
   float srcX = x + .5;
-  float srcY = y + .5
-
-  srcX = pin_unit(srcX);
-  srcY = pin_unit(srcY);
+  float srcY = y + .5;
 
   int i = 0;
   const int end = x + count;
-  GPoint ConvertedPoint;
-  for ( ; srcX < end; srcX += 1.0f)
+  GPoint ConvertedPoint{srcX, srcY};
+  for ( ; srcX < end; srcX += 1.0f, ++i)
   {
     ConvertedPoint.set(srcX, srcY);
     Inverse.convertPoint(ConvertedPoint);
-    row[i] = SrcBmp.getAddr(srcX, srcY);
+    int NewX = Utility::clamp(0, (int)ConvertedPoint.fX, SrcBmp.width() - 1);
+    int NewY = Utility::clamp(0, (int)ConvertedPoint.fY, SrcBmp.height() - 1);
+    row[i] = *(SrcBmp.getAddr(NewX, NewY));
   }
 }
 
