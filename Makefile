@@ -1,6 +1,6 @@
-CC = g++ -g -std=c++11
+CC = g++ -g -std=c++11 -pedantic
 
-CC_DEBUG = @$(CC)
+CC_DEBUG = @$(CC) -pedantic
 CC_RELEASE = @$(CC) -O3 -DNDEBUG
 
 G_SRC = src/*.cpp *.cpp

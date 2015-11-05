@@ -96,11 +96,6 @@ static void handle_proc(const CS575DrawRec& rec, const char path[], GBitmap* bit
         return;
     }
 
-    if (false) {
-        canvas->translate(bitmap->width()/2, bitmap->height()/2);
-        canvas->rotate(M_PI/6);
-        canvas->translate(-bitmap->width()/2, -bitmap->height()/2);
-    }
     rec.fDraw(canvas);
 
     if (!bitmap->writeToFile(path)) {
@@ -220,10 +215,11 @@ int main(int argc, char** argv) {
         printf("-- tolerance = %d\n", tolerance);
     }
     
-    double percent_correct = 0;
+    double total_correct = 0;
     int counter = 0;
     for (int i = 0; gDrawRecs[i].fDraw; ++i) {
-        counter += 1;
+        // weight the counter
+        counter += gDrawRecs[i].fPANumber;
 
         std::string path(root);
         path += gDrawRecs[i].fName;
@@ -253,7 +249,11 @@ int main(int argc, char** argv) {
                 if (correct < 1 && diffFile != NULL) {
                     add_diff_to_file(diffFile, testBM, expectedBM, diffDir, gDrawRecs[i].fName);
                 }
-                percent_correct += correct;
+                
+                // weight the score
+                correct *= gDrawRecs[i].fPANumber;
+
+                total_correct += correct;
             }
         }
         
@@ -263,7 +263,7 @@ int main(int argc, char** argv) {
         fclose(diffFile);
     }
 
-    int image_score = GRoundToInt(percent_correct * 100 / counter);
+    int image_score = GRoundToInt(total_correct * 100 / counter);
     if (expected) {
         printf("           image: %d\n", image_score);
     }

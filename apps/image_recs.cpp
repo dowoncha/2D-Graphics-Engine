@@ -556,9 +556,9 @@ static void draw_radial_quad(GCanvas* canvas) {
     };
     GShader* shader = GShader::FromRadialGradient(GPoint::Make(0, 0), 50, colors);
     const GRect r = GRect::MakeLTRB(-50, -50, 50, 50);
-
+    
     canvas->scale(4, 4);
-
+    
     canvas->shadeRect(r, shader);
     canvas->translate(100, 0);
     canvas->shadeRect(r, shader);
@@ -566,39 +566,62 @@ static void draw_radial_quad(GCanvas* canvas) {
     canvas->shadeRect(r, shader);
     canvas->translate(100, 0);
     canvas->shadeRect(r, shader);
+    
+    delete shader;
+}
 
+static void draw_linear_big(GCanvas* canvas) {
+    const GColor colors[] = {
+        GColor::MakeARGB(1, 1, 0, 0), GColor::MakeARGB(1, 0, 0, 1)
+    };
+    const GPoint pts[] = {
+        GPoint::Make(150, 180), GPoint::Make(250, 220)
+    };
+    GShader* shader = GShader::FromLinearGradient(pts, colors);
+    canvas->shadeRect(GRect::MakeWH(400, 400), shader);
+    delete shader;
+}
+
+static void draw_radial_big(GCanvas* canvas) {
+    const GColor colors[] = {
+        GColor::MakeARGB(1, 1, 0, 0), GColor::MakeARGB(1, 0, 0, 1)
+    };
+    GShader* shader = GShader::FromRadialGradient(GPoint::Make(200, 200), 70, colors);
+    canvas->shadeRect(GRect::MakeWH(400, 400), shader);
     delete shader;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 const CS575DrawRec gDrawRecs[] = {
-    { draw_solid_ramp,  256 * RAMP_W, 7*RAMP_H, "solid_ramp"    },
-    { draw_blend_white, 200, 200,               "blend_white"   },
-    { draw_blend_black, 200, 200,               "blend_black"   },
+    { draw_solid_ramp,  256 * RAMP_W, 7*RAMP_H, 1, "solid_ramp"    },
+    { draw_blend_white, 200, 200,               1, "blend_white"   },
+    { draw_blend_black, 200, 200,               1, "blend_black"   },
 
-    { draw_spocks_quad, 300, 300,               "spocks_quad"   },
-    { draw_spocks_zoom, 300, 300,               "spocks_zoom"   },
-    { draw_bm_circles,  300, 300,               "circles_blend" },
-    { draw_circle_big,  400, 300,               "circles_fat"   },
+    { draw_spocks_quad, 300, 300,               2, "spocks_quad"   },
+    { draw_spocks_zoom, 300, 300,               2, "spocks_zoom"   },
+    { draw_bm_circles,  300, 300,               2, "circles_blend" },
+    { draw_circle_big,  400, 300,               2, "circles_fat"   },
 
-    { draw_tri,         256, 256,               "tri"           },
-    { draw_tri_clipped, 256, 256,               "tri_clipped"   },
-    { draw_poly,        512, 512,               "poly"          },
-    { draw_poly_center, 256, 256,               "poly_center"   },
-    { draw_poly_rotate, 230, 230,               "poly_rotate"   },
+    { draw_tri,         256, 256,               3, "tri"           },
+    { draw_tri_clipped, 256, 256,               3, "tri_clipped"   },
+    { draw_poly,        512, 512,               3, "poly"          },
+    { draw_poly_center, 256, 256,               3, "poly_center"   },
+    { draw_poly_rotate, 230, 230,               3, "poly_rotate"   },
 
-    { draw_concat_scale,        DRAW_CONCAT_W, DRAW_CONCAT_H, "draw_concat_scale" },
-    { draw_concat_scale_bitmap, DRAW_CONCAT_W, DRAW_CONCAT_H, "draw_concat_scale_bitmap" },
-    { draw_concat_rotate,       DRAW_CONCAT_W, DRAW_CONCAT_H, "draw_concat_rotate" },
-    { draw_concat_rotate_bitmap,DRAW_CONCAT_W, DRAW_CONCAT_H, "draw_concat_rotate_bitmap" },
+    { draw_concat_scale,        DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_scale" },
+    { draw_concat_scale_bitmap, DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_scale_bitmap" },
+    { draw_concat_rotate,       DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_rotate" },
+    { draw_concat_rotate_bitmap,DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_rotate_bitmap" },
 
-    { draw_grad_insets, 400, 400,               "gradient_insets" },
-    { draw_grad_insets_rot, 400, 400,           "gradient_insets_rot" },
-    { draw_bm_pad, 530, 500,                    "bitmap_shader_clamp" },
-    { draw_poly_shaders, 400, 400,              "poly_shaders" },
-    { draw_radial,      400, 400,               "radial" },
-    { draw_radial_quad, 400, 400,               "radial_quad" },
+    { draw_grad_insets, 400, 400,               5, "gradient_insets" },
+    { draw_grad_insets_rot, 400, 400,           5, "gradient_insets_rot" },
+    { draw_bm_pad, 530, 500,                    5, "bitmap_shader_clamp" },
+    { draw_poly_shaders, 400, 400,              5, "poly_shaders" },
+    { draw_radial,      400, 400,               5, "radial" },
+    { draw_radial_quad, 400, 400,               5, "radial_quad" },
+    { draw_linear_big,  400, 400,               5, "linear_big" },
+    { draw_radial_big,  400, 400,               5, "radial_big" },
 
-    { NULL, 0, 0, NULL    },
+    { NULL, 0, 0, 0, NULL },
 };

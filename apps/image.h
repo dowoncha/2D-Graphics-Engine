@@ -13,6 +13,7 @@ struct CS575DrawRec {
     void        (*fDraw)(GCanvas*);
     int         fWidth;
     int         fHeight;
+    int         fPANumber;
     const char* fName;
 };
 

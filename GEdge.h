@@ -10,32 +10,26 @@
 class GEdge
 {
 private:
-	float Slope;
-	float CurrentX;
-	int Top;
- 	int Bottom;
+	float fSlope;
+	float fCurrentX;
+	int nTop;
+ 	int nBottom;
 public:
 	GEdge(const GPoint& p1, const GPoint& p2);
 	~GEdge() {}
 
-	float GetSlope() const { return Slope; }
-	float GetCurrentX() const { return CurrentX; }
-	int GetTop() const { return Top; }
-	int GetBottom() const { return Bottom; }
-	float GetBottomX() const { return CurrentX + (Bottom - Top) * Slope; }
+	float slope() const { return fSlope; }
+	float currentX() const { return fCurrentX; }
+	int top() const { return nTop; }
+	int bottom() const { return nBottom; }
+	float bottomX() const { return fCurrentX + (nBottom - nTop) * fSlope; }
 
 	bool PinTopAndBot(const int& Height);
-	void SetTop(int NewTop) { Top = NewTop; }
-	void SetBottom(int NewBot) { Bottom = NewBot; }
-	void SetCurrentX(const float& NewX) { CurrentX = NewX; }
-	void MakeSlopeVertical() { Slope = 0; }
-	void MoveCurrentX(const float& dy) {CurrentX += Slope * dy; }
+	void SetTop(int NewTop) { nTop = NewTop; }
+	void SetBottom(int NewBot) { nBottom = NewBot; }
+	void SetCurrentX(const float& NewX) { fCurrentX = NewX; }
+	void MakeSlopeVertical() { fSlope = 0; }
+	void MoveCurrentX(const float& dy) { fCurrentX += fSlope * dy; }
 
-	//bool operator== (const GEdge& Compare);
-	//GEdge& operator= (const GEdge& Source) con;
 	bool operator< (const GEdge& c) const;
-
-	/* Outputs the values of the Edge, slope, x, and y*/
-	std::string ToString() const;
-	static void PrintEdges(std::vector<GEdge>& Edges);
 };
