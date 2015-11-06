@@ -19,7 +19,7 @@ inline T clamp(T min, T value, T max) {
 
 template <typename T>
 inline T lerp(T v0, T v1, T t) {
-    return v0 - t * (v1 - v0);
+    return (1 - t) * v0 + t * v1;
 }
 
 inline int round(float a)
@@ -27,13 +27,13 @@ inline int round(float a)
   return (int)std::floor(a + .5);
 }
 
-GPixel ColorToPixel(const GColor color);
+GPixel ColorToPixel(const GColor& color);
 
 std::vector<GPoint> QuadToPoints(const GRect& Rect);
 
 GRect PointsToQuad(const std::vector<GPoint>& Points);
 
-GMatrix RectToRect(const GRect& src, const GRect& dst);
+GMatrix<float> RectToRect(const GRect& src, const GRect& dst);
 
 // 1. Clamp Min(max(0,t), 1)
 // 2. t - floor(t)

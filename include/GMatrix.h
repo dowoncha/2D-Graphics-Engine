@@ -1,27 +1,140 @@
 #pragma once
 
 #include "GPoint.h"
+#include <assert.h>
 
+template<typename T>
 class GMatrix
 {
 private:
-  std::array<float, 9> Matrix;
+  std::array<T, 9> Matrix;
 public:
-  GMatrix();                  //Defaults to identity matrix if no parameters
-  GMatrix(const float in[6]); //Fills in top two rows
-  GMatrix(const GMatrix& a);  //Copy constructor , change into a move construcor later on
+  GMatrix() {
+    Matrix = {T(1.0), T(0.0), T(0.0),
+              T(0.0), T(1.0), T(0.0),
+              T(0.0), T(0.0), T(1.0)
+             };
+  };
 
-  static GMatrix MakeTranslationMatrix(float x, float y);   //Creates a translation matrix from the input values
-  static GMatrix MakeScaleMatrix(float dx, float dy);       //Creates a scale matrix from input scale values
-  static GMatrix MakeMatrix(const float in[6]);
+  GMatrix(const T in[], int count)  //Fills in top two rows
+  {
+    assert(count <= 9);
 
-  void convertPoint(GPoint& P) const;      //Convert's input point by the current matrix
-  void convertPoint(float& x, float& y) const;
+    Matrix = { T(1.0), T(0.0), T(0.0),
+               T(0.0), T(1.0), T(0.0),
+               T(0.0), T(0.0), T(1.0)
+              };
 
-  GMatrix& concat(const GMatrix& InMat);  //Concat's two matrices together. Will modify current, matrix returns *this
-  GMatrix inverse() const;                       //Calculate the inverse of the matrix and return the new matrix
+    for (int i = 0; i < count; ++i) {
+      Matrix[i] = in[i];
+    }
+  }
 
-  void GetTwoRows(float ctm[6]) const //Get the first two rows into an array
+  GMatrix(const GMatrix<T>& a) : Matrix(a.Matrix) {}  //Copy constructor
+
+  GMatrix<T>& operator=(const GMatrix<T>& a)
+  {
+    if (this == &a) {
+      return *this;
+    }
+
+    Matrix = a.Matrix;
+
+    return *this;
+  }
+
+  void setTranslation(T x, T y)
+  {
+    Matrix[2] = x;
+    Matrix[5] = y;
+  }
+
+  void setScale(T dx, T dy)
+  {
+    Matrix[0] = dx;
+    Matrix[4] = dy;
+  }
+
+  void setMatrix(const T newMat[], int count)
+  {
+    assert(count <= 9);
+
+    for (int i = 0; i < count; ++i) {
+      Matrix[i] = newMat[i];
+    }
+  }
+
+  void convertPoint(GPoint& P) const      //Convert's input point by the current matrix
+  {
+    //Get Converted X Y Points using dotproduct
+    T NewX = Matrix[0] * P.fX + Matrix[1] * P.fY + Matrix[2];
+    T NewY = Matrix[3] * P.fX + Matrix[4] * P.fY + Matrix[5];
+
+    P.set(NewX, NewY);
+  }
+
+  void convertPoint(T& x, T& y) const
+  {
+    T NewX = Matrix[0] * x + Matrix[1] * y + Matrix[2];
+    T NewY = Matrix[3] * x + Matrix[4] * y + Matrix[5];
+
+    x = NewX;
+    y = NewY;
+  }
+
+  GMatrix<T>& concat(const GMatrix<T>& InMat)  //Concat's two matrices together. Will modify current, matrix returns *this
+  {
+    std::array<T, 9> ConcatMat;
+    std::array<T, 6> RowCol;
+
+    int counter = 0;
+    for (int i = 0; i < 9; i += 3)
+    {
+      RowCol[0] = Matrix[i];
+      RowCol[1] = Matrix[i + 1];
+      RowCol[2] = Matrix[i + 2];
+      for (int j = 0; j < 3; ++j, ++counter)
+      {
+        RowCol[3] = InMat.Matrix[j];
+        RowCol[4] = InMat.Matrix[j + 3];
+        RowCol[5] = InMat.Matrix[j + 6];
+
+        ConcatMat[counter] = RowCol[0] * RowCol[3] + RowCol[1] * RowCol[4] + RowCol[2] * RowCol[5];
+      }
+    }
+
+    Matrix = ConcatMat;
+
+    return *this;
+  }
+
+  GMatrix<T> inverse() const                       //Calculate the inverse of the matrix and return the new matrix
+  {
+    //CHECK: I want to change this but I dont know what I would use? using, typedef, define?
+    T a11 = Matrix[0], a12 = Matrix[1], a13 = Matrix[2];
+    T a21 = Matrix[3], a22 = Matrix[4], a23 = Matrix[5];
+    T a31 = Matrix[6], a32 = Matrix[7], a33 = Matrix[8];
+    //Calculate the determinant
+    T minor1 = a22 * a33 - a23 * a32;
+    T minor2 = a21 * a33 - a23 * a31;
+    T minor3 = a21 * a32 - a22 * a31;
+
+    T det = a11 * minor1 - a12 * minor2 + a13 * minor3;
+
+    T Inverse[9] = {
+      minor1,    a12 * a33 - a13 * a32,     a12 * a33 - a13 * a32,
+      minor2,    a11 * a33 - a13 * a31,     a11 * a23 - a13 * a21,
+      minor3,    a11 * a32 - a12 * a31,     a11 * a22 - a12 * a21
+    };
+
+    for (int i = 0; i < 9; ++i) {
+      Inverse[i] /= det;
+    }
+
+    return GMatrix<T>(Inverse, 9);
+  }
+
+  void GetTwoRows(T ctm[6]) const //Get the first two rows into an array
   {
     for (int i = 0; i < 6; ++i) {
       ctm[i] = Matrix[i];
@@ -29,6 +142,6 @@ public:
   }
 
   bool preservesRect() const {                  //Checks to see if matrix preserves rectangle shape
-    return Matrix[1] == 0.0f && Matrix[3] == 0.0f;
+    return Matrix[1] == T(0.0) && Matrix[3] == T(0.0);
   }
 };

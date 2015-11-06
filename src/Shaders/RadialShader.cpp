@@ -1,10 +1,15 @@
 #include "Shaders/RadialShader.h"
 
 RadialShader::RadialShader(const GPoint& c, float r, const GColor col[2])
- : center(c), radius(r), c0(col[0]), c1(col[1])
+ : center(c), radius(r), c0(col[0]), c1(col[1]), LocalMatrix()
 {
-  LocalMatrix.concat(GMatrix::MakeScaleMatrix(r, r))
-             .concat(GMatrix::MakeTranslationMatrix(c.x(), c.y()));
+  GMatrix<float> Scale;
+  Scale.setScale(r,r);
+
+  GMatrix<float> Trans;
+  Trans.setTranslation(c.x(), c.y());
+
+  LocalMatrix.concat(Scale).concat(Trans);
 }
 
 RadialShader::~RadialShader()
@@ -13,7 +18,7 @@ RadialShader::~RadialShader()
 
 bool RadialShader::setContext(const float ctm[6])
 {
-  GMatrix CTM(ctm);
+  GMatrix<float> CTM(ctm, 6);
   Inverse = CTM.concat(LocalMatrix).inverse();
 
   return true;
@@ -21,24 +26,25 @@ bool RadialShader::setContext(const float ctm[6])
 
 void RadialShader::shadeRow(int x, int y, int count, GPixel row[])
 {
-  float srcX = x + .5;
-  float srcY = y + .5;
-
-  GPoint ConvertedPoint{srcX, srcY};
-  for ( int i = 0; i < count; ++i, srcX += 1.0f)
+  GPoint Point;
+  GColor Color;
+  for ( int i = 0; i < count; ++i)
   {
-    ConvertedPoint.set(srcX, srcY);
-    Inverse.convertPoint(ConvertedPoint);
+    Point.fX = i + x + .5;
+    Point.fY = y + .5;
+    Inverse.convertPoint(Point);
+    Point.fX = Utility::clamp(0.0f, Point.fX, 1.0f);
+    Point.fY = Utility::clamp(0.0f, Point.fY, 1.0f);
 
-    float t = std::sqrt(ConvertedPoint.fX * ConvertedPoint.fX + ConvertedPoint.fY * ConvertedPoint.fY);
-
+    float t = std::sqrt(Point.fX * Point.fX + Point.fY * Point.fY);
     t = Utility::clamp(0.0f, t, 1.0f);
-    float a = Utility::lerp(c0.fA, c1.fA, t);
-    float r = Utility::lerp(c0.fR, c1.fR, t);
-    float g = Utility::lerp(c0.fG, c1.fG, t);
-    float b = Utility::lerp(c0.fB, c1.fB, t);
 
-    row[i] = Utility::ColorToPixel(GColor::MakeARGB(a, r, g, b));
+    Color.fA = Utility::lerp(c0.fA, c1.fA, t);
+    Color.fR = Utility::lerp(c0.fR, c1.fR, t);
+    Color.fG = Utility::lerp(c0.fG, c1.fG, t);
+    Color.fB = Utility::lerp(c0.fB, c1.fB, t);
+
+    row[i] = Utility::ColorToPixel(Color);
   }
 }
 
@@ -46,22 +52,6 @@ GShader* GShader::FromRadialGradient(const GPoint& center, float radius, const G
 {
   return new RadialShader(center, radius, colors);
 }
-
-// std::vector<GPoint> RadialShader::shadeRow(int x, int y, int count)
-// {
-//   float srcX = x + .5;
-//   float srcY = y + .5
-//
-//   std::vector<GPoint> row;
-//
-//   int count = x + count;
-//   for ( ; srcX < count; srcX += 1.0f)
-//   {
-//
-//   }
-//
-//   return row;
-// }
 
 //float pin_unit(float t) {
 // 1. Clamp Min(max(0,t), 1)

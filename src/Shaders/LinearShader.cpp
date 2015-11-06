@@ -1,29 +1,24 @@
 #include "Shaders/LinearShader.h"
 
 LinearShader::LinearShader(const GPoint pts[2], const GColor colors[2])
- : p0(pts[0]), p1(pts[1]), c0(colors[0]), c1(colors[1])
+ : c0(colors[0]), c1(colors[1])
 {
+  printf("Points %f %f %f %f\n", pts[0].x(), pts[0].y(),pts[1].x(), pts[1].y());
+
   float dx = pts[0].fX - pts[1].fX;
   float dy = pts[0].fY - pts[1].fY;
-  float LocalArr[6];
-  LocalArr[0] = dx;
-  LocalArr[1] = -1 * dy;
-  LocalArr[2] = pts[0].fX;
-  LocalArr[3] = dy;
-  LocalArr[4] = -1 * dx;
-  LocalArr[5] = pts[0].fY;
+  float LocalArr[6] = { dx, -1.0f * dy, pts[0].fX,
+                        dy, dx,         pts[0].fY };
 
-  LocalMatrix = GMatrix::MakeMatrix(LocalArr);
+  LocalMatrix.setMatrix(LocalArr, 6);
 }
 
 LinearShader::~LinearShader()
-{
-
-}
+{}
 
 bool LinearShader::setContext(const float ctm[6])
 {
-  GMatrix CTM(ctm);
+  GMatrix<float> CTM(ctm, 6);
   Inverse = CTM.concat(LocalMatrix).inverse();
 
   return true;
@@ -31,23 +26,21 @@ bool LinearShader::setContext(const float ctm[6])
 
 void LinearShader::shadeRow(int x, int y, int count, GPixel row[])
 {
-  float srcX = x + .5;
-  float srcY = y + .5;
-
+  GColor Color;
   for (int i = 0; i < count; ++i)
   {
-    row[i] = 0;
+    GPoint Point = {i + x + 0.5f, y + 0.5f};
+    Inverse.convertPoint(Point);
+
+    float t = Utility::clamp(0.0f, Point.fX, 1.0f);
+
+    Color.fA = Utility::lerp(c0.fA, c1.fA, t);
+    Color.fR = Utility::lerp(c0.fR, c1.fR, t);
+    Color.fG = Utility::lerp(c0.fG, c1.fG, t);
+    Color.fB = Utility::lerp(c0.fB, c1.fB, t);
+
+    row[i] = Utility::ColorToPixel(Color);
   }
- //Begin Loop
-
- //If a Linear use SrcX
-
- //LERP
-
- //When we loop instead of recalculating Inverse we can add a and to x and y
- //Sx += a , Sy += d
-
- //End loop
 }
 
 GShader* GShader::FromLinearGradient(const GPoint pts[2], const GColor colors[2])
@@ -55,8 +48,8 @@ GShader* GShader::FromLinearGradient(const GPoint pts[2], const GColor colors[2]
   return new LinearShader(pts, colors);
 }
 
-// //float pin_unit(float t) {
-// // 1. Clamp Min(max(0,t), 1)
-// // 2. t - floor(t)
-// // 3. t=(t-floor(t))*2; if (t > 1) t = 2-t;
-// // 4. cos ((1-t)*pi)
+//float pin_unit(float t) {
+// 1. Clamp Min(max(0,t), 1)
+// 2. t - floor(t)
+// 3. t=(t-floor(t))*2; if (t > 1) t = 2-t;
+// 4. cos ((1-t)*pi)

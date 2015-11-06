@@ -1,7 +1,5 @@
 #pragma once
 
-#include <array>
-
 #include "GPoint.h"
 #include "GColor.h"
 #include "GShader.h"
@@ -10,11 +8,11 @@
 class RadialShader : public GShader
 {
 private:
-    const GPoint center;
-    float radius;
-    GColor c0, c1;
-    GMatrix LocalMatrix;
-    GMatrix Inverse;
+  const GPoint center;
+  const float radius;
+  GColor c0, c1;
+  GMatrix<float> LocalMatrix;
+  GMatrix<float> Inverse;
 public:
   RadialShader(const GPoint& center, float radius, const GColor colors[2]);
   ~RadialShader();

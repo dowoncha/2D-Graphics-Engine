@@ -5,10 +5,11 @@
  * */
 MyCanvas::MyCanvas(const GBitmap& bitmap):
 	Bitmap(bitmap),
-	BmpRect(GIRect::MakeWH(bitmap.width(), bitmap.height()))
+	BmpRect(GIRect::MakeWH(bitmap.width(), bitmap.height())),
+	CTM()
 {
 			/* Push the identity matrix onto the matrix stack */
-		MatrixStack.push(GMatrix());
+		MatrixStack.push(CTM);
 }
 
 MyCanvas::~MyCanvas() {	}
@@ -52,8 +53,7 @@ GPixel MyCanvas::Blend(const GPixel src, const GPixel dst)
 
 void MyCanvas::BlendRow(GPixel *Dst, int startX, GPixel row[], int count)
 {
-	for ( int i = 0; i < count; ++startX, ++i)
-	{
+	for ( int i = 0; i < count; ++startX, ++i) {
 		Dst[startX] = Blend(row[i], Dst[startX]);
 	}
 }
@@ -93,8 +93,8 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 {
 	assert(!dst.isEmpty());
 
-	/* Get the matrix of the conversion from src to dst rect */
-	const GMatrix LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
+	// Get the matrix of the conversion from src to dst rect
+	auto LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
 
 	float localArr[6];
 	LocalMatrix.GetTwoRows(localArr);
@@ -120,7 +120,7 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 
 	CTMPoints(Points);  //Convert the points by the CTM
 
-	if ( !MatrixStack.top().preservesRect())  //If the CTM does not keep rectangular shape we draw a polygon
+	if ( !CTM.preservesRect())  //If the CTM does not keep rectangular shape we draw a polygon
 	{
 		shadeDevicePolygon(Points, shader);
 		return;
@@ -139,10 +139,10 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 	//Go to the start row of the rectangle
 	DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes() * ConvertedRect.top());
 
-	float CTM[6];
-	MatrixStack.top().GetTwoRows(CTM);
+	float TwoRows[6];
+	CTM.GetTwoRows(TwoRows);
 	//Set the Context for the input shader
-	shader->setContext(CTM);
+	shader->setContext(TwoRows);
 
 	int count = ConvertedRect.right() - ConvertedRect.left();
 	//All rows will have the same number of pixels, so create a vector of that size
@@ -155,6 +155,8 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 
 		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
 	}
+
+	delete[] row;
 }
 
 void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* shader)
@@ -169,8 +171,8 @@ void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* sha
 void MyCanvas::shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader)
 {
 	SortPointsForConvex(Points);								//Sort the points into an order we can make edges with
-	auto Edges = MakeConvexEdges(Points); //Make edges out of the sorted points
-	ClipEdges(Edges);											//Clip the edges from the dst bitmap
+	auto Edges = MakeConvexEdges(Points);   //Make edges out of the sorted points
+	ClipEdges(Edges);											  //Clip the edges from the dst bitmap
 
 	if (Edges.size() < 2)									//If we have less than 2 edges than we cannot draw
 	{
@@ -190,31 +192,30 @@ void MyCanvas::shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader)
 	// Increment bitmap dst pixel pointer to the start row
 	DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes() * LeftEdge.top());
 
-	float CTM[6];
-	MatrixStack.top().GetTwoRows(CTM);
+	float TwoRows[6];
+	CTM.GetTwoRows(TwoRows);
 
-	shader->setContext(CTM);
+	shader->setContext(TwoRows);
 	int EdgeCounter = 2;
 	for (int y = LeftEdge.top(); y < Edges.back().bottom(); ++y)
 	{
 		int startX = Utility::round(LeftEdge.currentX());
 		int count = Utility::round(RightEdge.currentX() - LeftEdge.currentX());
-		count = Utility::clamp(1, count, Bitmap.width());
 
-		if (count <= 0)
+		if (LeftEdge.currentX() > RightEdge.currentX())
 		{
 			std::printf("Edge 1: Top: %d X: %f Slope: %f\n", LeftEdge.top(), LeftEdge.currentX(), LeftEdge.slope());
 			std::printf("Edge 2: Top: %d X: %f Slope: %f\n", RightEdge.top(), RightEdge.currentX(), RightEdge.slope());
+			std::printf("EdgeCount: %d\n", EdgeCounter);
 			return;
 		}
 
-		if (count > 0)
-		{
-			GPixel *row = new GPixel[count];	      //Allocate array for the row
-			shader->shadeRow(startX, y, count, row);
-			BlendRow(DstPixels, startX, row, count);
-			delete[] row;  //Free the Pixel row since it was dynamically allocated
-		}
+		count = Utility::clamp(1, count, Bitmap.width());
+
+		GPixel *row = new GPixel[count];	      //Allocate array for the row
+		shader->shadeRow(startX, y, count, row);
+		BlendRow(DstPixels, startX, row, count);
+		delete[] row;  //Free the Pixel row since it was dynamically allocated
 
 		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
 
@@ -241,29 +242,27 @@ void MyCanvas::shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader)
 
 void MyCanvas::save()
 {
-	MatrixStack.push(MatrixStack.top());	//Push a copy of the CTM onto the stack
+	MatrixStack.push(CTM);	//Push a copy of the CTM onto the stack
 }
 
 void MyCanvas::restore()
 {
 	if (!MatrixStack.empty())		//Check to make sure stack is not empty
 	{
+		CTM = MatrixStack.top();
 		MatrixStack.pop();				//Remove the CTM
 	}
 }
 
 void MyCanvas::concat(const float matrix[6])
 {
-	auto& CTM = MatrixStack.top();	//We get a reference to the CTM here to modify it
-
 	/* Make a new matrix using the input matrix values*/
-	CTM.concat(GMatrix(matrix));				//Concat the input matrix onto the CTM
+	GMatrix<float> ConcatMat(matrix, 6);
+	CTM.concat(ConcatMat);				//Concat the input matrix onto the CTM
 }
 
 void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
 {
-	auto CTM = GetCTM();
-
 	/* Convert all points by the CTM*/
 	for (auto &Point: Points) {
 		CTM.convertPoint(Point);

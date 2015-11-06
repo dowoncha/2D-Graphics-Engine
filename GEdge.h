@@ -1,11 +1,13 @@
 #pragma once
 
-#include "GPoint.h"
-#include "GRect.h"
 #include <vector>
 #include <string>
 #include <iostream>
 #include <algorithm>
+
+#include "GPoint.h"
+#include "GRect.h"
+#include "Utility.h"
 
 class GEdge
 {
@@ -24,12 +26,12 @@ public:
 	int bottom() const { return nBottom; }
 	float bottomX() const { return fCurrentX + (nBottom - nTop) * fSlope; }
 
-	bool PinTopAndBot(const int& Height);
+	bool PinTopAndBot(int Height);
 	void SetTop(int NewTop) { nTop = NewTop; }
 	void SetBottom(int NewBot) { nBottom = NewBot; }
-	void SetCurrentX(const float& NewX) { fCurrentX = NewX; }
-	void MakeSlopeVertical() { fSlope = 0; }
-	void MoveCurrentX(const float& dy) { fCurrentX += fSlope * dy; }
+	void SetCurrentX(float NewX) { fCurrentX = NewX; }
+	void MakeSlopeVertical() { fSlope = 0.0f; }
+	void MoveCurrentX(float dy) { fCurrentX += fSlope * dy; }
 
 	bool operator< (const GEdge& c) const;
 };

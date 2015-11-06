@@ -61,9 +61,6 @@ public:
 	void restore() override;
 	void concat(const float matrix[6]) override;
 
-	//Get a copy of the current CTM
-  GMatrix GetCTM() const { return MatrixStack.top(); }
-
 	/* These functions tend to use vectors and stl containers more because
 	 * they are not limited by the GCanvas function definitions */
 	// Convert input points by the CTM
@@ -74,12 +71,10 @@ public:
 	GPixel Blend(const GPixel src, const GPixel dst);
 	//Blend an entire row of pixels
 	void BlendRow(GPixel *Dst, int startX, GPixel row[], int count);
-
 	// Sort the points for the convex
 	static void SortPointsForConvex(std::vector<GPoint>& Points);
 	// This will take a set of points and make them into edges for a convex polygon
 	static std::vector<GEdge> MakeConvexEdges(const std::vector<GPoint>& Points);
-
 	// Any edge with a point outside the bitmap width is now pinned and a in bound edge is now created
 	void ClipEdges(std::vector<GEdge>& Edges) const;
 	void ClipEdgesTopAndBottom(std::vector<GEdge>& Edges) const;
@@ -88,7 +83,8 @@ public:
 private:
 	const GBitmap Bitmap;
 	const GIRect BmpRect;
-	std::stack<GMatrix> MatrixStack;
+	std::stack<GMatrix<float>> MatrixStack;
+	GMatrix<float> CTM;
 };
 
 inline unsigned MyCanvas::MulDiv255Round(const COLORBYTE a, const COLORBYTE b)

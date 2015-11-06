@@ -10,8 +10,8 @@ class BitmapShader : public GShader
 {
 private:
   const GBitmap SrcBmp;
-  GMatrix LocalMatrix;
-  GMatrix Inverse;
+  GMatrix<float> LocalMatrix;
+  GMatrix<float> Inverse;
 public:
   BitmapShader(const GBitmap& src, const float localMatrix[6]);
   ~BitmapShader();

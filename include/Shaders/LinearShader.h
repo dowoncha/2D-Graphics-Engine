@@ -4,14 +4,14 @@
 #include "GColor.h"
 #include "GShader.h"
 #include "GMatrix.h"
+#include "Utility.h"
 
 class LinearShader : public GShader
 {
 private:
-  GPoint p0, p1;
   GColor c0, c1;
-  GMatrix LocalMatrix;
-  GMatrix Inverse;
+  GMatrix<float> LocalMatrix;
+  GMatrix<float> Inverse;
 public:
   LinearShader(const GPoint pts[2], const GColor colors[2]);
   ~LinearShader();
