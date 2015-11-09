@@ -20,9 +20,7 @@ GEdge::GEdge(const GPoint& p1, const GPoint& p2)
 bool GEdge::operator<(const GEdge& c) const
 {
 	int rX = Utility::round(fCurrentX);
-	int rX1 = Utility::round(fCurrentX + fSlope);
 	int cRX = Utility::round(c.fCurrentX);
-	int cRX1 = Utility::round(c.fCurrentX + c.fSlope);
 	return std::tie(nTop, rX, fSlope) < std::tie(c.nTop, cRX, c.fSlope);
 }
 

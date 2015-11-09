@@ -24,9 +24,9 @@
 #include "GMatrix.h"
 #include "GShader.h"
 #include "Utility.h"
-#include "Shaders/BitmapShader.h"
-#include "Shaders/LinearShader.h"
-#include "Shaders/RadialShader.h"
+#include "BitmapShader.h"
+#include "LinearShader.h"
+#include "RadialShader.h"
 
 #define GETA(a)    		  GPixel_GetA(a)
 #define GETR(a)    		  GPixel_GetR(a)

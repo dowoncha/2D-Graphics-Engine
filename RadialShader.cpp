@@ -1,4 +1,4 @@
-#include "Shaders/RadialShader.h"
+#include "RadialShader.h"
 
 RadialShader::RadialShader(const GPoint& c, float r, const GColor col[2])
  : c0(col[0]), c1(col[1])
@@ -30,8 +30,8 @@ void RadialShader::shadeRow(int x, int y, int count, GPixel row[])
 
     Inverse.convertPoint(Point);
 
-    Point.fX = Utility::clamp(0.0f, Point.fX, 1.0f);
-    Point.fY = Utility::clamp(0.0f, Point.fY, 1.0f);
+    //Point.fX = Utility::clamp(0.0f, Point.fX, 1.0f);
+    //Point.fY = Utility::clamp(0.0f, Point.fY, 1.0f);
 
     float t = std::sqrt(Point.fX * Point.fX + Point.fY * Point.fY);
 

@@ -1,4 +1,4 @@
-#include "Shaders/BitmapShader.h"
+#include "BitmapShader.h"
 
 BitmapShader::BitmapShader(const GBitmap& src, const float localMatrix[6])
 : SrcBmp(src), LocalMatrix(localMatrix, 6)

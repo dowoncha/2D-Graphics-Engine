@@ -1,4 +1,4 @@
-#include "Shaders/LinearShader.h"
+#include "LinearShader.h"
 
 LinearShader::LinearShader(const GPoint pts[2], const GColor colors[2])
  : c0(colors[0]), c1(colors[1])
