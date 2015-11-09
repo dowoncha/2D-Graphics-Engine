@@ -8,8 +8,6 @@
 class RadialShader : public GShader
 {
 private:
-  const GPoint center;
-  const float radius;
   GColor c0, c1;
   GMatrix<float> LocalMatrix;
   GMatrix<float> Inverse;

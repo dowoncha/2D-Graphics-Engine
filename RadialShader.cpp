@@ -1,15 +1,12 @@
 #include "Shaders/RadialShader.h"
 
 RadialShader::RadialShader(const GPoint& c, float r, const GColor col[2])
- : center(c), radius(r), c0(col[0]), c1(col[1]), LocalMatrix()
+ : c0(col[0]), c1(col[1])
 {
-  GMatrix<float> Scale;
-  Scale.setScale(r,r);
+  GMatrix<float> Trans = GMatrix<float>::MakeTranslationMatrix(c.x(), c.y());
+  GMatrix<float> Scale = GMatrix<float>::MakeScaleMatrix(r, r);
 
-  GMatrix<float> Trans;
-  Trans.setTranslation(c.x(), c.y());
-
-  LocalMatrix.concat(Scale).concat(Trans);
+  LocalMatrix = Trans * Scale;
 }
 
 RadialShader::~RadialShader()
@@ -26,17 +23,18 @@ bool RadialShader::setContext(const float ctm[6])
 
 void RadialShader::shadeRow(int x, int y, int count, GPixel row[])
 {
-  GPoint Point;
   GColor Color;
   for ( int i = 0; i < count; ++i)
   {
-    Point.fX = i + x + .5;
-    Point.fY = y + .5;
+    GPoint Point = {i + x + 0.5f, y + 0.5f};
+
     Inverse.convertPoint(Point);
+
     Point.fX = Utility::clamp(0.0f, Point.fX, 1.0f);
     Point.fY = Utility::clamp(0.0f, Point.fY, 1.0f);
 
     float t = std::sqrt(Point.fX * Point.fX + Point.fY * Point.fY);
+
     t = Utility::clamp(0.0f, t, 1.0f);
 
     Color.fA = Utility::lerp(c0.fA, c1.fA, t);

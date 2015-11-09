@@ -43,6 +43,22 @@ public:
     return *this;
   }
 
+  static GMatrix<T> MakeTranslationMatrix(T x, T y)
+  {
+    GMatrix<T> Mat;
+    Mat.setTranslation(x, y);
+
+    return Mat;
+  }
+
+  static GMatrix<T> MakeScaleMatrix(T dx, T dy)
+  {
+    GMatrix<T> Mat;
+    Mat.setScale(dx, dy);
+
+    return Mat;
+  }
+
   void setTranslation(T x, T y)
   {
     Matrix[2] = x;
@@ -82,8 +98,37 @@ public:
     y = NewY;
   }
 
+  GMatrix<T> operator*(const GMatrix<T>& InMat)
+  {
+    float ConcatMat[9];
+    float RowCol[6];
+
+    int counter = 0;
+    for (int i = 0; i < 9; i += 3)
+    {
+      RowCol[0] = Matrix[i];
+      RowCol[1] = Matrix[i + 1];
+      RowCol[2] = Matrix[i + 2];
+      for (int j = 0; j < 3; ++j, ++counter)
+      {
+        RowCol[3] = InMat.Matrix[j];
+        RowCol[4] = InMat.Matrix[j + 3];
+        RowCol[5] = InMat.Matrix[j + 6];
+
+        ConcatMat[counter] = RowCol[0] * RowCol[3] + RowCol[1] * RowCol[4] + RowCol[2] * RowCol[5];
+      }
+    }
+
+    return GMatrix<T>(ConcatMat, 9);
+  }
+
   GMatrix<T>& concat(const GMatrix<T>& InMat)  //Concat's two matrices together. Will modify current, matrix returns *this
   {
+    if (this == &InMat)
+    {
+      return *this;
+    }
+
     std::array<T, 9> ConcatMat;
     std::array<T, 6> RowCol;
 
@@ -122,9 +167,9 @@ public:
     T det = a11 * minor1 - a12 * minor2 + a13 * minor3;
 
     T Inverse[9] = {
-      minor1,    a12 * a33 - a13 * a32,     a12 * a33 - a13 * a32,
-      minor2,    a11 * a33 - a13 * a31,     a11 * a23 - a13 * a21,
-      minor3,    a11 * a32 - a12 * a31,     a11 * a22 - a12 * a21
+      minor1,                   a13 * a32 - a12 * a33,     a12 * a23 - a13 * a22,
+      a23 * a31 - a21 * a33,    a11 * a33 - a13 * a31,     a13 * a21 - a11 * a23,
+      a21 * a32 - a22 * a31,    a12 * a31 - a11 * a31,     a11 * a22 - a12 * a21
     };
 
     for (int i = 0; i < 9; ++i) {

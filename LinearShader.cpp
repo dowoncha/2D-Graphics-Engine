@@ -5,9 +5,9 @@ LinearShader::LinearShader(const GPoint pts[2], const GColor colors[2])
 {
   printf("Points %f %f %f %f\n", pts[0].x(), pts[0].y(),pts[1].x(), pts[1].y());
 
-  float dx = pts[0].fX - pts[1].fX;
-  float dy = pts[0].fY - pts[1].fY;
-  float LocalArr[6] = { dx, -1.0f * dy, pts[0].fX,
+  float dx = pts[1].fX - pts[0].fX;
+  float dy = pts[1].fY - pts[0].fY;
+  float LocalArr[6] = { dx, -dy, pts[0].fX,
                         dy, dx,         pts[0].fY };
 
   LocalMatrix.setMatrix(LocalArr, 6);

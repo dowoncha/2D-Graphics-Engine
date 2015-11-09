@@ -200,40 +200,40 @@ void MyCanvas::shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader)
 	for (int y = LeftEdge.top(); y < Edges.back().bottom(); ++y)
 	{
 		int startX = Utility::round(LeftEdge.currentX());
-		int count = Utility::round(RightEdge.currentX() - LeftEdge.currentX());
+		int count = (int)(RightEdge.currentX() - LeftEdge.currentX());
 
 		if (LeftEdge.currentX() > RightEdge.currentX())
 		{
 			std::printf("Edge 1: Top: %d X: %f Slope: %f\n", LeftEdge.top(), LeftEdge.currentX(), LeftEdge.slope());
 			std::printf("Edge 2: Top: %d X: %f Slope: %f\n", RightEdge.top(), RightEdge.currentX(), RightEdge.slope());
 			std::printf("EdgeCount: %d\n", EdgeCounter);
-			return;
 		}
 
-		count = Utility::clamp(1, count, Bitmap.width());
+		count = Utility::clamp(1, count, BmpRect.width() - 1);
 
 		GPixel *row = new GPixel[count];	      //Allocate array for the row
 		shader->shadeRow(startX, y, count, row);
 		BlendRow(DstPixels, startX, row, count);
 		delete[] row;  //Free the Pixel row since it was dynamically allocated
 
-		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
-
 		// Move left and right edges currentX to next row
 		LeftEdge.MoveCurrentX(1.0f);
 		RightEdge.MoveCurrentX(1.0f);
 
 		/* Check left edge to see if y has passed bottom and we have not reached max edges */
-		if (y > LeftEdge.bottom() && EdgeCounter < Edges.size())
+		if (y >= LeftEdge.bottom() && EdgeCounter < Edges.size())
 		{
 				LeftEdge = Edges[EdgeCounter];
 				++EdgeCounter;
 		}
-		if (y > RightEdge.bottom() && EdgeCounter < Edges.size())
+		if (y >= RightEdge.bottom() && EdgeCounter < Edges.size())
 		{
 				RightEdge = Edges[EdgeCounter];
 				++EdgeCounter;
 		}
+
+		DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
+
 	}
 }
 
@@ -429,7 +429,7 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
 				GEdge(GPoint::Make(width, Edge.top()), GPoint::Make(width, ClipY))
 			);
 			Edge.SetCurrentX(width);			//Set the CurrentX to the bitmap width
-			Edge.SetTop((int)(ClipY+.5));	//Set the top of clipped edge to the rounded ClipY
+			Edge.SetTop(Utility::round(ClipY));	//Set the top of clipped edge to the rounded ClipY
 		}
 
 		/* If the bottom of the edge needs to be clipped right*/

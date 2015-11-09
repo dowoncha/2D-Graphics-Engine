@@ -14,15 +14,15 @@ GEdge::GEdge(const GPoint& p1, const GPoint& p2)
 	nBottom = Utility::round(BotPoint.y());
 
 	/* Find the currentX value */
-	fCurrentX = TopPoint.x() + fSlope * (nTop - TopPoint.y());
+	fCurrentX = TopPoint.x() + fSlope * (nTop + .5 - TopPoint.y()) ;
 }
 
 bool GEdge::operator<(const GEdge& c) const
 {
 	int rX = Utility::round(fCurrentX);
-	//int rX1 = Utility::round(fCurrentX + fSlope);
+	int rX1 = Utility::round(fCurrentX + fSlope);
 	int cRX = Utility::round(c.fCurrentX);
-	//int cRX1 = Utility::round(c.fCurrentX + c.fSlope);
+	int cRX1 = Utility::round(c.fCurrentX + c.fSlope);
 	return std::tie(nTop, rX, fSlope) < std::tie(c.nTop, cRX, c.fSlope);
 }
 
