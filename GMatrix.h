@@ -1,7 +1,10 @@
+//Copyright 2015 Dowon Cha
+
 #pragma once
 
 #include "GPoint.h"
 #include <assert.h>
+#include <array>
 
 template<typename T>
 class GMatrix
@@ -29,6 +32,8 @@ public:
       Matrix[i] = in[i];
     }
   }
+
+  GMatrix(std::array<T, 9> in) : Matrix(in) {}
 
   GMatrix(const GMatrix<T>& a) : Matrix(a.Matrix) {}  //Copy constructor
 
@@ -156,9 +161,9 @@ public:
   GMatrix<T> inverse() const                       //Calculate the inverse of the matrix and return the new matrix
   {
     //CHECK: I want to change this but I dont know what I would use? using, typedef, define?
-    T a11 = Matrix[0], a12 = Matrix[1], a13 = Matrix[2];
-    T a21 = Matrix[3], a22 = Matrix[4], a23 = Matrix[5];
-    T a31 = Matrix[6], a32 = Matrix[7], a33 = Matrix[8];
+    const T& a11 = Matrix[0], a12 = Matrix[1], a13 = Matrix[2];
+    const T& a21 = Matrix[3], a22 = Matrix[4], a23 = Matrix[5];
+    const T& a31 = Matrix[6], a32 = Matrix[7], a33 = Matrix[8];
     //Calculate the determinant
     T minor1 = a22 * a33 - a23 * a32;
     T minor2 = a21 * a33 - a23 * a31;
@@ -166,17 +171,17 @@ public:
 
     T det = a11 * minor1 - a12 * minor2 + a13 * minor3;
 
-    T Inverse[9] = {
+    std::array<T, 9> Inverse {{
       minor1,                   a13 * a32 - a12 * a33,     a12 * a23 - a13 * a22,
       a23 * a31 - a21 * a33,    a11 * a33 - a13 * a31,     a13 * a21 - a11 * a23,
-      a21 * a32 - a22 * a31,    a12 * a31 - a11 * a31,     a11 * a22 - a12 * a21
-    };
+      minor3,                   a12 * a31 - a11 * a31,     a11 * a22 - a12 * a21
+    }};
 
-    for (int i = 0; i < 9; ++i) {
-      Inverse[i] /= det;
+    for (auto& Element: Inverse) {
+      Element /= det;
     }
 
-    return GMatrix<T>(Inverse, 9);
+    return GMatrix<T>(Inverse);
   }
 
   void GetTwoRows(T ctm[6]) const //Get the first two rows into an array

@@ -28,3 +28,4 @@ draw: $(DRAW_SRC) $(G_SRC)
 
 clean:
 	@rm -rf image tests draw *.png *.dSYM
+

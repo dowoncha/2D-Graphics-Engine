@@ -3,8 +3,10 @@
  */
 
 #include "GShader.h"
+#include "GBitmap.h"
 #include "GColor.h"
 #include "GPixel.h"
+#include "GRect.h"
 
 namespace {
 
@@ -45,4 +47,12 @@ private:
 
 GShader* GShader::FromColor(const GColor& color) {
     return new PixelShader(pin_and_premul_to_pixel(color));
+}
+
+GShader* GShader::FromBitmap(const GBitmap& bm, const GRect& dst) {
+    const float mat[] = {
+        dst.width() / bm.width(),   0,                              dst.left(),
+        0,                          dst.height() / bm.height(),     dst.top(),
+    };
+    return FromBitmap(bm, mat);
 }

@@ -593,6 +593,180 @@ static void draw_radial_big(GCanvas* canvas) {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+static void show_line(GCanvas* canvas, const GPoint& p0, const GPoint& p1,
+                      const GCanvas::Stroke& stroke, const GColor& color) {
+    canvas->strokeLine(p0, p1, stroke, color);
+
+    GColor c = GColor::MakeARGB(1, 0, 1, 0);
+    canvas->fillRect(GRect::MakeXYWH(p0.x() - 2, p0.y() - 2, 5, 5), c);
+    canvas->fillRect(GRect::MakeXYWH(p1.x() - 2, p1.y() - 2, 5, 5), c);
+}
+
+static void draw_stroke_lines(GCanvas* canvas) {
+    GCanvas::Stroke stroke{ 50, 0, false };
+    const GPoint p0 = GPoint::Make(80, 200);
+    const GPoint p1 = GPoint::Make(300, 80);
+
+    show_line(canvas, p0, p1, stroke, GColor::MakeARGB(1, 1, 0, 0));
+    canvas->translate(50, 100);
+    stroke.fAddCap = true;
+    show_line(canvas, p1, p0, stroke, GColor::MakeARGB(1, 0, 0, 1));
+}
+
+static float function(float x) {
+    return sin(x);// / x;
+}
+
+static void draw_stroke_polyline(GCanvas* canvas) {
+//    return;
+
+    const int N = 100;
+    GPoint pts[N];
+    float x = -2*M_PI;
+    float dx = -2*x / (N - 1);
+    for (int i = 0; i < N; ++i) {
+        pts[i] = GPoint::Make(x, function(x));
+        x += dx;
+    }
+
+    for (float angle = 0; angle < M_PI; angle += M_PI / 6) {
+        GShader* shader = GShader::FromColor(GColor::MakeARGB(1, angle/4, sin(angle), sin(angle+2)));
+        canvas->save();
+        canvas->translate(200, 200);
+        canvas->scale(30, 30);
+        canvas->rotate(angle);
+        canvas->strokePolygon(pts, N, false, GCanvas::Stroke{0.25f,0,true}, shader);
+        canvas->restore();
+    }
+}
+
+static void draw_stroke_rects(GCanvas* canvas) {
+    const GRect r = GRect::MakeXYWH(50, 60, 100, 80);
+
+    canvas->strokeRect(r, GCanvas::Stroke{30, 2, false}, GColor::MakeARGB(1, 1, 0, 0));
+    canvas->translate(200, 0);
+    canvas->strokeRect(r, GCanvas::Stroke{60, 2, false}, GColor::MakeARGB(1, 0, 1, 0));
+    canvas->translate(-200, 200);
+    canvas->strokeRect(r, GCanvas::Stroke{60, 1, false}, GColor::MakeARGB(1, 0, 0, 1));
+    canvas->translate(200, 0);
+    canvas->strokeRect(r, GCanvas::Stroke{30, 1, false}, GColor::MakeARGB(1, 0, 0, 0));
+}
+
+static void draw_strokes(GCanvas* canvas) {
+    GShader* shader = GShader::FromColor(GColor::MakeARGB(1, 1, 0, 0));
+    GCanvas::Stroke stroke = { 20, 2, false };
+
+    canvas->strokeRect(GRect::MakeXYWH(30, 30, 300, 200), stroke, shader);
+}
+
+static void make_regular_star(GPoint pts[], int count, float cx, float cy, float radius, bool cw) {
+    const int n = count >> 1;
+
+    float angle = -M_PI / 2;
+    float deltaAngle = 2 * M_PI * n / count;
+    if (!cw) {
+        deltaAngle = -deltaAngle;
+    }
+
+    for (int i = 0; i < count; ++i) {
+        pts[i].set(cx + cos(angle) * radius, cy + sin(angle) * radius);
+        angle += deltaAngle;
+    }
+}
+
+static void draw_star(GCanvas* canvas, const GColor& color, float miter, bool cw) {
+    const int n = 7;
+    GPoint pts[n];
+    const GCanvas::Stroke stroke = { 20, miter, false };
+
+    make_regular_star(pts, n, 200, 200, 140, cw);
+    GShader* shader = GShader::FromColor(color);
+    canvas->strokePolygon(pts, n, true, stroke, shader);
+    delete shader;
+}
+
+static void draw_stroke_star(GCanvas* canvas) {
+    const struct {
+        GPoint  fOffset;
+        GColor  fColor;
+        float   fMiterLimit;
+        bool    fClockwise;
+    } recs[] = {
+        { GPoint::Make(  0,   0), GColor::MakeARGB(1, 1, 0, 0), 8, true },
+        { GPoint::Make(400,   0), GColor::MakeARGB(1, 0, 1, 0), 8, false },
+        { GPoint::Make(  0, 400), GColor::MakeARGB(1, 0, 0, 1), 1, true },
+        { GPoint::Make(400, 400), GColor::MakeARGB(1, 0, 0, 0), 1, false },
+    };
+
+    canvas->scale(0.5f, 0.5f);
+    for (const auto& r : recs) {
+        canvas->save();
+        canvas->translate(r.fOffset.x(), r.fOffset.y());
+        draw_star(canvas, r.fColor, r.fMiterLimit, r.fClockwise);
+        canvas->restore();
+    }
+}
+
+static void shade_stroke_ring(GCanvas* canvas, GShader* shader, float width) {
+    canvas->save();
+    canvas->scale(1, -1);
+    canvas->translate(0, -400);
+
+    const int n = 8;
+    GPoint poly[n];
+    const GCanvas::Stroke stroke = { width, 3, true };
+    
+    make_regular_poly(poly, n, 200, 200, 150);
+    canvas->strokePolygon(poly, n, true, stroke, shader);
+
+    canvas->restore();
+}
+
+static GShader* make_shader0() {
+    const GColor colors[] = {
+        GColor::MakeARGB(1, 1, 0, 0), GColor::MakeARGB(1, 0, 0, 1)
+    };
+    const GPoint pts[] = { { 0, 0 }, { 400, 400 } };
+    return GShader::FromLinearGradient(pts, colors);
+}
+
+static GShader* make_shader1() {
+    const GColor colors[] = {
+        GColor::MakeARGB(1, 1, 1, 1), GColor::MakeARGB(1, 0, 0, 0)
+    };
+    return GShader::FromRadialGradient(GPoint::Make(200, 200), 250, colors);
+}
+
+static GShader* make_shader2() {
+    GBitmap tex;
+    tex.readFromFile("apps/spock.png");
+    return GShader::FromBitmap(tex, GRect::MakeWH(400, 400));
+}
+
+static void draw_stroke_rings(GCanvas* canvas) {
+    const struct {
+        GShader* (*fMakeShader)();
+        float    fWidth;
+        GPoint   fOffset;
+    } recs[] = {
+        { make_shader0, 80, GPoint::Make(0, 0), },
+        { make_shader1, 80, GPoint::Make(400, 0), },
+        { make_shader2, 80, GPoint::Make(200, 400), },
+    };
+
+    canvas->scale(0.5f, 0.5f);
+    for (const auto& r : recs) {
+        canvas->save();
+        canvas->translate(r.fOffset.x(), r.fOffset.y());
+        GShader* shader = r.fMakeShader();
+        shade_stroke_ring(canvas, shader, r.fWidth);
+        delete shader;
+        canvas->restore();
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 const CS575DrawRec gDrawRecs[] = {
     { draw_solid_ramp,  256 * RAMP_W, 7*RAMP_H, 1, "solid_ramp"    },
     { draw_blend_white, 200, 200,               1, "blend_white"   },
@@ -622,6 +796,12 @@ const CS575DrawRec gDrawRecs[] = {
     { draw_radial_quad, 400, 400,               5, "radial_quad" },
     { draw_linear_big,  400, 400,               5, "linear_big" },
     { draw_radial_big,  400, 400,               5, "radial_big" },
+
+    { draw_stroke_lines,     400, 400,          6, "stroke_line" },
+    { draw_stroke_polyline,  400, 400,          6, "stroke_polyline" },
+    { draw_stroke_rects,     400, 400,          6, "stroke_rect" },
+    { draw_stroke_star,      400, 400,          6, "stroke_star" },
+    { draw_stroke_rings,     400, 400,          6, "stroke_rings" },
 
     { NULL, 0, 0, 0, NULL },
 };

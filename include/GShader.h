@@ -10,6 +10,7 @@
 class GBitmap;
 class GColor;
 class GPoint;
+class GRect;
 
 /**
  *  GShaders create colors to fill whatever geometry is being drawn to a GCanvas.
@@ -41,6 +42,7 @@ public:
      *  Returns null if the either parameter is not valid.
      */
     static GShader* FromBitmap(const GBitmap&, const float localMatrix[6]);
+    static GShader* FromBitmap(const GBitmap&, const GRect&);
 
     /**
      *  Return a subclass of GShader that draws the specified linear gradient. Returns NULL if

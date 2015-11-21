@@ -1,3 +1,5 @@
+//Copyright 2015 Dowon Cha
+
 #pragma once
 
 #include "GPoint.h"

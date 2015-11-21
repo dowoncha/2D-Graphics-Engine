@@ -1,3 +1,5 @@
+//Copyright 2015 Dowon Cha
+
 #include "MyCanvas.h"
 
 /**
@@ -170,7 +172,7 @@ void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* sha
 
 void MyCanvas::shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader)
 {
-	SortPointsForConvex(Points);								//Sort the points into an order we can make edges with
+	//SortPointsForConvex(Points);								//Sort the points into an order we can make edges with
 	auto Edges = MakeConvexEdges(Points);   //Make edges out of the sorted points
 	ClipEdges(Edges);											  //Clip the edges from the dst bitmap
 
@@ -237,6 +239,38 @@ void MyCanvas::shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader)
 	}
 }
 
+void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const Stroke& stroke, GShader* shader)
+{
+	for (int i = 0; i < n - 1; ++i)
+	{
+		const GPoint& A = Points[i];
+		const GPoint& B = Points[i + 1];
+
+		GPoint AB = GPoint::Make(B.fX - A.fX, B.fY - A.fY);
+		float length = std::sqrt(AB.fX * AB.fX + AB.fY * AB.fY);
+		float rad = stroke.fWidth / 2.0f;
+		GPoint ABT = GPoint::Make(-AB.fY * rad / length, AB.fX * rad / length);
+
+		//These edges should be in CW order
+		// std::array<GPoint, 4> Quad{{
+		// 	GPoint{A.fX + ABT.fX, A.fY + ABT.fY},  //Perpendicular from A
+		// 	GPoint{A.fX - ABT.fX, A.fY - ABT.fY},  //Parrallel from line
+		// 	GPoint{B.fX + ABT.fX, B.fY + ABT.fY}, //Right
+		// 	GPoint{B.fX - ABT.fX, B.fY - ABT.fY}  //Bottom
+		// }};
+
+		std::vector<GPoint> Quad;
+		Quad.emplace_back(GPoint::Make(A.fX + ABT.fX, A.fY + ABT.fY));
+		Quad.emplace_back(GPoint::Make(A.fX - ABT.fX, A.fY - ABT.fY));
+		Quad.emplace_back(GPoint::Make(B.fX + ABT.fX, B.fY + ABT.fY));
+		Quad.emplace_back(GPoint::Make(B.fX + ABT.fX, B.fY - ABT.fY));
+
+		shadeDevicePolygon(Quad, shader);
+	}
+
+	return;
+}
+
 /************************************************************************/
 //Current Transformation Functions
 
@@ -271,6 +305,16 @@ void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
 
 /************************************************************************/
 //Edge creation functions
+
+// template <typename Iter>
+// std::vector<GEdge> MyCanvas::PointsToEdges(Iter it, Iter end)
+// {
+// 	SortPointsForConvex(Points);								//Sort the points into an order we can make edges with
+// 	auto Edges = MakeConvexEdges(Points);   //Make edges out of the sorted points
+// 	ClipEdges(Edges);											  //Clip the edges from the dst bitmap
+//
+// 	return Edges;
+// }
 
 void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
 {

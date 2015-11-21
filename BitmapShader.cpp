@@ -1,3 +1,5 @@
+//Copyright 2015 Dowon Cha
+
 #include "BitmapShader.h"
 
 BitmapShader::BitmapShader(const GBitmap& src, const float localMatrix[6])

@@ -127,6 +127,26 @@ public:
      *  into the canvas using SRC_OVER blend mode.
      */
     virtual void shadeConvexPolygon(const GPoint[], int count, GShader* shader) = 0;
+
+    struct Stroke {
+        float   fWidth;         // width of the stroke
+        float   fMiterLimit;    // limiting ratio of diagonal length of a miterjoin to strokewidth.
+                                // If that ratio exceeds fMiterLimit, then the join should be drawn
+                                // with a bevel.
+        bool    fAddCap;        // if true, add a square cap at the ends
+    };
+
+    void strokeLine(const GPoint& p0, const GPoint& p1, const Stroke&, const GColor&);
+    void strokeLine(const GPoint& p0, const GPoint& p1, const Stroke&, GShader*);
+    void strokeRect(const GRect&, const Stroke&, const GColor&);
+    void strokeRect(const GRect&, const Stroke&, GShader*);
+
+    /**
+     *  Stroke the specified polygon using the Stroke settings. If isClosed is true, then the
+     *  drawn stroke should connect the first and last points of the polygon, else it should not,
+     *  and those end-caps should reflect the Stroke.fAddCap setting.
+     */
+    virtual void strokePolygon(const GPoint[], int n, bool isClosed, const Stroke&, GShader*) = 0;
 };
 
 #endif

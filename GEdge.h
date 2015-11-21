@@ -1,9 +1,12 @@
+//Copyright 2015 Dowon Cha
+
 #pragma once
 
 #include <vector>
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include <tuple>
 
 #include "GPoint.h"
 #include "GRect.h"

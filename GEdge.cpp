@@ -1,3 +1,5 @@
+//Copyright 2015 Dowon Cha
+
 #include "GEdge.h"
 
 GEdge::GEdge(const GPoint& p1, const GPoint& p2)

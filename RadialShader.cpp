@@ -1,3 +1,5 @@
+//Copyright 2015 Dowon Cha
+
 #include "RadialShader.h"
 
 RadialShader::RadialShader(const GPoint& c, float r, const GColor col[2])

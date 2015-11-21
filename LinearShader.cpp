@@ -1,3 +1,5 @@
+//Copyright 2015 Dowon Cha
+
 #include "LinearShader.h"
 
 LinearShader::LinearShader(const GPoint pts[2], const GColor colors[2])

@@ -1,3 +1,5 @@
+//Copyright 2015 Dowon Cha
+
 #include "Utility.h"
 
 namespace Utility

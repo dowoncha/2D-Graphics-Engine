@@ -83,6 +83,9 @@ public:
     virtual void setRect(const GRect&) {}
     virtual GColor getColor() = 0;
     virtual void setColor(const GColor&) {}
+    virtual GClick* findClickHandler(GPoint loc) { return nullptr; }
+    virtual bool handleKey(int) { return false; }
+    virtual void drawHilite(GCanvas* canvas);
 
     void concat(GCanvas* canvas) {
         const GRect r = this->getRect();
@@ -123,12 +126,23 @@ static void draw_hilite(GCanvas* canvas, Shape* shape) {
     canvas->restore();
 }
 
+void Shape::drawHilite(GCanvas* canvas) {
+    draw_hilite(canvas, this);
+}
+
 static void constrain_color(GColor* c) {
     c->fA = std::max(std::min(c->fA, 1.f), 0.1f);
     c->fR = std::max(std::min(c->fR, 1.f), 0.f);
     c->fG = std::max(std::min(c->fG, 1.f), 0.f);
     c->fB = std::max(std::min(c->fB, 1.f), 0.f);
 }
+
+class ShapeClickHandler : public GClick {
+public:
+    ShapeClickHandler(GPoint loc) : GClick(loc, "ShapeClickHandler") {}
+    
+    virtual void handleClick(GWindow*) = 0;
+};
 
 class RectShape : public Shape {
 public:
@@ -258,6 +272,84 @@ private:
     GPoint  fPoly[64];
 };
 
+class StrokeShape : public Shape {
+public:
+    StrokeShape() : fPts{{ 30, 30 }, {200, 60}, {50, 200}} {
+        fRect = GRect::MakeXYWH(100, 100, 200, 100);
+        fColor = GColor::MakeARGB(1, 1, 0, 0);
+        fWidth = 25;
+        fMiterLimit = 5;
+        fAddCap = false;
+        fIsClosed = false;
+    }
+    
+    void onDraw(GCanvas* canvas) override {
+        GShader* shader = GShader::FromColor(fColor);
+        GCanvas::Stroke stroke = { fWidth, fMiterLimit, fAddCap };
+        canvas->strokePolygon(fPts, 3, fIsClosed, stroke, shader);
+        delete shader;
+    }
+    
+    void drawHilite(GCanvas* canvas) override {
+        const float r = 3;
+        GColor c = GColor::MakeARGB(1, 0, 0, 1);
+        for (auto p : fPts) {
+            canvas->fillRect(GRect::MakeLTRB(p.fX - r, p.fY - r, p.fX + r, p.fY + r), c);
+        }
+    }
+    
+    GRect getRect() override { return fRect; }
+    void setRect(const GRect& r) override { fRect = r; }
+    GColor getColor() override { return fColor; }
+    void setColor(const GColor& c) override { fColor = c; }
+
+    class MyHandler : public ShapeClickHandler {
+        GPoint* fPtr;
+    public:
+        MyHandler(GPoint loc, GPoint* ptr) : ShapeClickHandler(loc), fPtr(ptr) {}
+
+        void handleClick(GWindow* wind) {
+            *fPtr = this->curr();
+            wind->requestDraw();
+        }
+    };
+
+    GClick* findClickHandler(GPoint loc) override {
+        for (int i = 0; i < 3; ++i) {
+            if (hit_test(loc.fX, loc.fY, fPts[i].fX, fPts[i].fY)) {
+                return new MyHandler(loc, &fPts[i]);
+            }
+        }
+        return nullptr;
+    }
+
+    bool handleKey(int c) override {
+        switch (c) {
+            case 'W': fWidth += 4; return true;
+            case 'w': fWidth -= 4; return true;
+            case 'c':
+            case 'C': fAddCap = !fAddCap; return true;
+            case 'm':
+            case 'M': fMiterLimit = -fMiterLimit; return true;
+            case 'x':
+            case 'X': fIsClosed = !fIsClosed; return true;
+        }
+        return this->INHERITED::handleKey(c);
+    }
+
+private:
+    GRect   fRect;
+    float   fA;
+    GPoint  fPts[3];
+    GColor  fColor;
+    float   fWidth;
+    float   fMiterLimit;
+    bool    fAddCap;
+    bool    fIsClosed;
+
+    typedef Shape INHERITED;
+};
+
 static void alloc_bitmap(GBitmap* bm, int w, int h) {
     bm->fWidth = w;
     bm->fHeight = h;
@@ -312,11 +404,17 @@ protected:
             fList[i]->draw(canvas);
         }
         if (fShape) {
-            draw_hilite(canvas, fShape);
+            fShape->drawHilite(canvas);
         }
     }
 
     virtual bool onKeyPress(const XEvent&, KeySym sym) {
+        if (fShape && fShape->handleKey(sym)) {
+            this->updateTitle();
+            this->requestDraw();
+            return true;
+        }
+
         if (sym >= '1' && sym <= '9') {
             fShape = cons_up_shape(sym - '1');
             if (fShape) {
@@ -335,6 +433,13 @@ protected:
         
         if ('c' == sym) {
             fShape = new RadialShape(rand_color(), rand_color());
+            fList.push_back(fShape);
+            this->updateTitle();
+            this->requestDraw();
+            return true;
+        }
+        if ('s' == sym) {
+            fShape = new StrokeShape;
             fList.push_back(fShape);
             this->updateTitle();
             this->requestDraw();
@@ -410,6 +515,11 @@ protected:
 
     virtual GClick* onFindClickHandler(GPoint loc) {
         if (fShape) {
+            GClick* handler = fShape->findClickHandler(loc);
+            if (handler) {
+                return handler;
+            }
+
             GPoint anchor;
             if (in_resize_corner(fShape->getRect(), loc.x(), loc.y(), &anchor)) {
                 return new ResizeClick(loc, anchor);
@@ -432,6 +542,11 @@ protected:
     }
 
     virtual void onHandleClick(GClick* click) {
+        if (click->isName("ShapeClickHandler")) {
+            ((ShapeClickHandler*)click)->handleClick(this);
+            return;
+        }
+        
         if (click->isName("move")) {
             const GPoint curr = click->curr();
             const GPoint prev = click->prev();

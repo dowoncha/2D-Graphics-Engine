@@ -1,5 +1,5 @@
 /**
- * Dowon Cha
+ * Copyright 2015 Dowon Cha
  * This is my implementation of a canvas. It is a subclass of the GCanvas class.
  * */
 
@@ -55,6 +55,8 @@ public:
 	void shadeRect(const GRect& rect, GShader* shader) override;
 	void shadeConvexPolygon(const GPoint points[], int count, GShader* shader) override;
 	void shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader);
+
+	void strokePolygon(const GPoint[], int n, bool isClosed, const Stroke&, GShader*) override;
 
 	/* Current Transformation Matrix functions*/
 	void save() override;
