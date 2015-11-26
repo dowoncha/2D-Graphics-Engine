@@ -147,20 +147,62 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
     return;
   }
 
+  using namespace Utility;
+
   std::vector<GQuad> Shells;
 
-  /*Calculate every shell and store it into the vector*/
-  for (int i = 0; i < n - 1; ++i)
-  {
+  //Calculate every shell and store it into the vector
+  for (int i = 0; i < n - 1; ++i) {
     Shells.emplace_back(GQuad{Points[i], Points[i + 1], stroke.fWidth});
   }
 
+  //If the polygon is closed then we connect the last and first points
+  if (isClosed) {
+    Shells.emplace_back(GQuad{Points[n-1], Points[0], stroke.fWidth});
+  }
+
+  //Draw all of the shells
   for (auto Shell : Shells)
   {
     auto Points = Shell.getPoints();
     CTMPoints(Points);
     auto Edges = pointsToEdges(Points);
 
+    shadeDevicePolygon(Edges, shader);
+  }
+
+  //No need to do joint work if only one line
+  if (Shells.size() == 1) return;
+
+  for (int i = 0; i < Shells.size(); ++i)
+  {
+    std::vector<GPoint> JointPoly;
+
+    const GPoint& joint = Shells[i].B;
+    const GPoint& BQ = Shells[i].ABT;
+    const GPoint& BR = Shells[i+1].ABT;
+    GPoint Q = joint + BQ;
+    GPoint R = joint + BR;
+    GPoint BP = BR + BQ;
+
+    GPoint U = Utility::unitVector(Shells[i].A, Shells[i].B);
+    U.fX = -U.fX;
+    U.fY = -U.fY;
+    GPoint V = Utility::unitVector(Shells[i+1].A, Shells[i+1].B);
+    float UdotV = U.fX * V.fX + U.fY * V.fY;
+    float h = std::sqrt(2.0f / (1 - UdotV));
+    float BPlength = stroke.fWidth / 2.0f * h;
+
+    BP.fX *= BPlength;
+    BP.fY *= BPlength;
+
+    JointPoly.push_back(joint);
+    JointPoly.push_back(Q);
+    JointPoly.push_back(R);
+    JointPoly.push_back(joint + BP);
+
+    CTMPoints(JointPoly);
+    auto Edges = pointsToEdges(JointPoly);
     shadeDevicePolygon(Edges, shader);
   }
 }

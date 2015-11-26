@@ -7,6 +7,7 @@
 
 #include <vector>
 #include "GPoint.h"
+#include "Utility.h"
 
 class GQuad
 {
@@ -17,10 +18,9 @@ public:
 
   static GQuad MakeShell(const GPoint& A, const GPoint& B, float width)
   {
-    GPoint AB = GPoint::Make(B.fX - A.fX, B.fY - A.fY);
-    float length = std::sqrt(AB.fX * AB.fX + AB.fY * AB.fY);
+    GPoint AB = Utility::unitVector(A, B);
     float rad = width * 0.5f;
-    GPoint ABT = GPoint::Make(-AB.fY * rad / length, AB.fX * rad / length);
+    GPoint ABT = GPoint::Make(-AB.fY * rad, AB.fX * rad);
 
     GQuad Shell = {A, B, ABT};
 

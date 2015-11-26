@@ -40,6 +40,18 @@ inline int round(float a)
   return (int)std::floor(a + .5);
 }
 
+GPoint unitVector(const GPoint& A, const GPoint& B);
+
+inline GPoint operator+(const GPoint& A, const GPoint& B)
+{
+  return GPoint{A.fX + B.fX, A.fY + B.fY};
+}
+
+inline GPoint operator-(const GPoint& A, const GPoint& B)
+{
+  return GPoint{A.fX - B.fX, A.fY - B.fY};
+}
+
 GPixel ColorToPixel(const GColor& color);
 
 std::vector<GPoint> RectToPoints(const GRect& Rect);
