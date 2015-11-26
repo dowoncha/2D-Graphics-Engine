@@ -22,39 +22,35 @@ GEdge::GEdge(const GPoint& p1, const GPoint& p2)
 bool GEdge::operator<(const GEdge& c) const
 {
   int rX = Utility::round(fCurrentX);
-  int rXS = Utility::round(fCurrentX + fSlope);
-
   int cRX = Utility::round(c.fCurrentX);
-  int cRXS = Utility::round(c.fCurrentX + c.fSlope);
  
-  return std::tie(nTop, rX, rXS, fSlope) < std::tie(c.nTop, cRX, cRXS, c.fSlope);
+  return std::tie(nTop, rX, fSlope) < std::tie(c.nTop, cRX, c.fSlope);
 }
 
 bool GEdge::PinTopAndBot(int Height)
 {
-	//Error edge segment is entirely out of bitmap just ignore
-	if (nBottom < 0 || nTop >= Height) {
-		return false;
-	}
+  //Error edge segment is entirely out of bitmap just ignore
+  if (nBottom < 0 || nTop >= Height) {
+    return false;
+  }
 
-	/* First pin the top point if it is above the bitmap*/
-	if ( nTop < 0 )
-	{
-		//std::cout << "Top being pinned to 0: " << Top << " Old CurrentX: " << CurrentX;
-		/* Move the currentX by the slope * dx */
-		fCurrentX -= fSlope * nTop;
-		nTop = 0;
-	}
+  /* First pin the top point if it is above the bitmap*/
+  if ( nTop < 0 )
+  {
+    /* Move the currentX by the slope * dx */
+    fCurrentX -= fSlope * nTop;
+    nTop = 0;
+  }
 
-	/* If the bottom of the point is below the bitmap just set bottom of line to bitmap height */
-	if (nBottom > Height) {
-		nBottom = Height;
-	}
+  /* If the bottom of the point is below the bitmap just set bottom of line to bitmap height */
+  if (nBottom > Height) {
+    nBottom = Height;
+  }
+ 
+  /* Delete all edges that are horizontal AKA infinite slope*/
+  if (std::isinf(fSlope)) {
+    return false;
+  }
 
-	/* Delete all edges that are horizontal AKA infinite slope*/
-	if (std::isinf(fSlope)) {
-		return false;
-	}
-
-	return true;
+  return true;
 }

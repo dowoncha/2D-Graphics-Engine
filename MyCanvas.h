@@ -65,6 +65,10 @@ private:
   /* These functions tend to use vectors and stl containers more because
    * they are not limited by the GCanvas function definitions */
   
+  /* Fill in the input rectangle with the shader. CTM will be set to shader context within
+   * rect points must have been pre-CTM. Should have been pre clipped coming in*/
+  void shadeDeviceRect(const GIRect& rect, GShader* shader);
+
   /* Points coming in should already be in device coordinates AKA multipled by the CTM*/
   void shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader);
   
