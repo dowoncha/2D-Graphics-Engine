@@ -5,8 +5,6 @@
 LinearShader::LinearShader(const GPoint pts[2], const GColor colors[2])
  : c0(colors[0]), c1(colors[1])
 {
-  printf("Points %f %f %f %f\n", pts[0].x(), pts[0].y(),pts[1].x(), pts[1].y());
-
   float dx = pts[1].fX - pts[0].fX;
   float dy = pts[1].fY - pts[0].fY;
   float LocalArr[6] = { dx, -dy, pts[0].fX,
@@ -34,7 +32,7 @@ void LinearShader::shadeRow(int x, int y, int count, GPixel row[])
     GPoint Point = {i + x + 0.5f, y + 0.5f};
     Inverse.convertPoint(Point);
 
-    float t = Utility::clamp(0.0f, Point.fX, 1.0f);
+    float t = Utility::floor_clamp(Point.fX);
 
     Color.fA = Utility::lerp(c0.fA, c1.fA, t);
     Color.fR = Utility::lerp(c0.fR, c1.fR, t);
@@ -49,9 +47,3 @@ GShader* GShader::FromLinearGradient(const GPoint pts[2], const GColor colors[2]
 {
   return new LinearShader(pts, colors);
 }
-
-//float pin_unit(float t) {
-// 1. Clamp Min(max(0,t), 1)
-// 2. t - floor(t)
-// 3. t=(t-floor(t))*2; if (t > 1) t = 2-t;
-// 4. cos ((1-t)*pi)

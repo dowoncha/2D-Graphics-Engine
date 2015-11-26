@@ -44,16 +44,16 @@ public:
 
   class SizeViolation {};
 
-  /* Fill the entire canvas with the specified color, using SRC porter-duff mode. */
+  /* Fill the entire canvas with the specified color */
   void clear(const GColor& color) override;
   
-  /* Fill a rect with a color or a bitmap*/
+  /* Fill a rect with a color or a bitmap */
   void fillRect(const GRect&, const GColor&) override;
   
-  /* Fills the input rectangle from input bitmap onto destination bitmap*/
+  /* Fills the input rectangle from input bitmap onto destination bitmap */
   void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
   
-  /* Fills a convex polygon with the input color*/
+  /* Fills a convex polygon with the input color */
   void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
 
   /* Shade a rectangle */
@@ -84,28 +84,25 @@ private:
   /* Points coming in should already be in device coordinates AKA multipled by the CTM*/
   void shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader);
   
-  /* Currently draws a line according to given points */
-  void strokeLine(const GPoint& A, const GPoint& B, GShader* shader);
-  
   /* Points will be sorted in place, and then edges will be created and clipped*/
   std::vector<GEdge> pointsToEdges(std::vector<GPoint>& Points) const;
   
   /* Convert input points by the CTM */
   void CTMPoints(std::vector<GPoint>& Points) const;
   
-  // Multiply Divide multiply again by 255 and round 2 Colors into another
+  /* Multiply Divide multiply again by 255 and round 2 Colors into another */
   static unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);
   
-  // Blends two Pixel's into a new pixel
+  /* Blends two Pixel's into a new pixel */
   GPixel blend(const GPixel src, const GPixel dst);
   
-  //Blend an entire row of pixels
+  /* Blend an entire row of pixels */
   void blendRow(GPixel *Dst, int startX, GPixel row[], int count);
   
-  // Sort the points for the convex
+  /* Sort the points for the convex */
   static void SortPointsForConvex(std::vector<GPoint>& Points);
   
-  // This will take a set of points and make them into edges for a convex polygon
+  /* This will take a set of points and make them into edges for a convex polygon */
   static std::vector<GEdge> MakeConvexEdges(const std::vector<GPoint>& Points);
   
   /* Edge clip functions. Begin at ClipEdges which will call the functions for each side. The edges
