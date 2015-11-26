@@ -37,61 +37,16 @@ inline int round(float a)
   return (int)std::floor(a + .5);
 }
 
-GPixel ColorToPixel(const GColor& color)
-{
-  GColor pinned = color.pinToUnit();            //Make sure color is between 0 and 1
+GPixel ColorToPixel(const GColor& color);
 
-  float fA =  pinned.fA * 255.9999f;		  //Convert from 0-1 to 0-255
-  uint8_t uA = (uint8_t) fA;
-  uint8_t uR = (uint8_t) (pinned.fR * fA);  //Multiply rgb values by the new alpha
-  uint8_t uG = (uint8_t) (pinned.fG * fA);
-  uint8_t uB = (uint8_t) (pinned.fB * fA);
+std::vector<GPoint> RectToPoints(const GRect& Rect);
 
-  return GPixel_PackARGB(uA, uR, uG, uB);	  //Returned the packed pixel
-}
+GRect PointsToRect(const std::vector<GPoint>& Points);
 
-std::vector<GPoint> RectToPoints(const GRect& Rect)
-{
-  //Convert the input rect into a vector with 4 point corners
-  std::vector<GPoint> PreTransform({
-    GPoint::Make(Rect.x(), Rect.y()),
-    GPoint::Make(Rect.x() + Rect.width(), Rect.y()),
-    GPoint::Make(Rect.x(), Rect.y() + Rect.height()),
-    GPoint::Make(Rect.x() + Rect.width(), Rect.y() + Rect.height())
-  });
+GMatrix<float> RectToRect(const GRect& src, const GRect& dst);
 
-  return PreTransform;
-}
-
-GRect PointsToRect(const std::vector<GPoint>& Points)
-{
-  assert(Points.size() == 4);
-
-  return GRect::MakeLTRB(Points[0].x(), Points[0].y(), Points[3].x(), Points[3].y());
-}
-
-GMatrix<float> RectToRect(const GRect& src, const GRect& dst)
-{
-  // Make translation matrix of the source from the origin
-  GMatrix<float> SrcTranslate;
-  SrcTranslate.setTranslation(-1 * src.left(), -1 * src.top());
-
-  // Make scale matrix of dx, dy. Dst / Src
-  GMatrix<float> Scale;
-  Scale.setScale(dst.width() / src.width(), dst.height() / src.height());
-
-  // Get translation matrix of the dst rectangle
-  GMatrix<float> DstTranslate;
-  DstTranslate.setTranslation(dst.left(), dst.top());
-
-  // Concatenate the 3 matrices. DstTranslate * Scale * SrcTranslate
-  DstTranslate.concat(Scale).concat(SrcTranslate);
-
-  return DstTranslate;
-}
+} //namespace Utility
 
 // Clamp functions for later on
 // 3. t=(t-floor(t))*2; if (t > 1) t = 2-t;
 // 4. cos ((1-t)*pi)
-
-} //namespace
