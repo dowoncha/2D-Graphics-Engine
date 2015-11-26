@@ -19,7 +19,7 @@ namespace Utility
     return GPixel_PackARGB(uA, uR, uG, uB);		//Returned the packed pixel
   }
 
-  std::vector<GPoint> QuadToPoints(const GRect& Rect)
+  std::vector<GPoint> RectToPoints(const GRect& Rect)
   {
   	//Convert the input rect into a vector with 4 point corners
   	std::vector<GPoint> PreTransform({
@@ -32,7 +32,7 @@ namespace Utility
   	return PreTransform;
   }
 
-  GRect PointsToQuad(const std::vector<GPoint>& Points)
+  GRect PointsToRect(const std::vector<GPoint>& Points)
   {
   	assert(Points.size() == 4);
   	/* Return */

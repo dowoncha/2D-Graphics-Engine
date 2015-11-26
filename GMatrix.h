@@ -12,7 +12,8 @@ class GMatrix
 private:
   std::array<T, 9> Matrix;
 public:
-  GMatrix() {
+  GMatrix() 
+  {
     Matrix = {T(1.0), T(0.0), T(0.0),
               T(0.0), T(1.0), T(0.0),
               T(0.0), T(0.0), T(1.0)
@@ -105,8 +106,8 @@ public:
 
   GMatrix<T> operator*(const GMatrix<T>& InMat)
   {
-    float ConcatMat[9];
-    float RowCol[6];
+    std::array<T, 9> ConcatMat;
+    std::array<T, 6> RowCol;
 
     int counter = 0;
     for (int i = 0; i < 9; i += 3)
@@ -124,7 +125,7 @@ public:
       }
     }
 
-    return GMatrix<T>(ConcatMat, 9);
+    return GMatrix<T>(ConcatMat);
   }
 
   GMatrix<T>& concat(const GMatrix<T>& InMat)  //Concat's two matrices together. Will modify current, matrix returns *this
@@ -160,7 +161,6 @@ public:
 
   GMatrix<T> inverse() const                       //Calculate the inverse of the matrix and return the new matrix
   {
-    //CHECK: I want to change this but I dont know what I would use? using, typedef, define?
     const T& a11 = Matrix[0], a12 = Matrix[1], a13 = Matrix[2];
     const T& a21 = Matrix[3], a22 = Matrix[4], a23 = Matrix[5];
     const T& a31 = Matrix[6], a32 = Matrix[7], a33 = Matrix[8];

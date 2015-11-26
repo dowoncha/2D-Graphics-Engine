@@ -2,9 +2,6 @@
 
 #include "MyCanvas.h"
 
-/**
- * Takes in the bitmap that this canvas will draw to
- * */
 MyCanvas::MyCanvas(const GBitmap& bitmap):
 	Bitmap(bitmap),
 	BmpRect(GIRect::MakeWH(bitmap.width(), bitmap.height())),
@@ -25,6 +22,197 @@ GCanvas* GCanvas::Create(const GBitmap& bitmap)
   }
   
   return new MyCanvas(bitmap);
+}
+
+void MyCanvas::clear(const GColor& color)
+{
+  //Get the start of the bitmap _Pixels array
+  GPixel* DstPixels = Bitmap.pixels();
+  GPixel pColor = Utility::ColorToPixel(color);     //Convert input color into a pixel
+
+  int length = Bitmap.fHeight * Bitmap.fWidth;
+
+  for (int i = 0; i < length; ++i)
+  {
+    DstPixels[i] = pColor;
+  }
+}
+
+void MyCanvas::fillRect(const GRect& rect, const GColor& color)
+{
+  assert(!rect.isEmpty());
+
+  GPixel pColor = Utility::ColorToPixel(color);
+  
+  GPixel* DstPixels = Bitmap.pixels();
+  DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes * rect.top());
+  
+  for (int y = rect.fTop; y < rect.fBottom; ++y)
+  {
+    for (int x = rect.fLeft; y < rect.fRight; ++x)
+    {
+      DstPixels[x] = blend(pColor, DstPixels[x]);
+    }
+    
+    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes);
+  }
+}
+
+void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
+{
+  assert(!dst.isEmpty());
+
+  // Get the matrix of the conversion from src to dst rect
+  auto LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
+
+  float localArr[6];
+  LocalMatrix.GetTwoRows(localArr);
+  //Create the shader for a bitmap
+  GShader* shader = GShader::FromBitmap(src, localArr);
+  //Shade the rectangle with the shader from the bitmap
+  shadeRect(dst, shader);
+}
+
+void MyCanvas::fillConvexPolygon(const GPoint Points[], int count, const GColor& color)
+{
+  assert(count > 2);
+
+  GShader* shader = GShader::FromColor(color);  //Make the shader for one color
+  shadeConvexPolygon(Points, count, shader);
+}
+
+void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
+{
+  auto Points = Utility::RectToPoints(rect);  //Convert input rectangle into points
+
+  CTMPoints(Points);  //Convert the points by the CTM
+ 
+  if ( !CTM.preservesRect())  //If the CTM does not keep rectangular shape we draw a polygon
+  {
+    auto Edges = pointsToEdges(Points);
+    shadeDevicePolygon(Edges, shader);
+    return;
+  }
+
+  //Convert the CTM'd points back into a rect since we know it preserves it
+  auto ConvertedRect = Utility::PointsToRect(Points).round();
+
+  shadeDeviceRect(ConvertedRect, shader);
+}
+
+void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* shader)
+{
+  std::vector<GPoint> Points(points, points + count);
+
+  CTMPoints(Points);	//Multiply the Points by the CTM      
+  auto Edges = pointsToEdges(Points);
+
+  shadeDevicePolygon(Edges, shader);
+}
+
+void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const Stroke& stroke, GShader* shader)
+{
+  assert(n > 1);
+
+  std::vector<GQuad> Shells;
+
+  /*Calculate every shell and store it into the vector*/
+  for (int i = 0; i < n - 1; ++i)
+  {
+    Shells.emplace_back(GQuad{Points[i], Points[i + 1], stroke.fWidth});
+  }
+
+  for (auto Shell : Shells)
+  {
+    auto Points = Shell.getPoints();
+    CTMPoints(Points);
+    auto Edges = pointsToEdges(Points);
+
+    shadeDevicePolygon(Edges, shader);
+  }
+}
+
+/***********************************Device Drawing Functions *****************************************/
+
+void MyCanvas::shadeDeviceRect(const GIRect& rect, GShader* shader)
+{
+  // Make sure rect is not an empty one and clip the edges from the bitmap with intersect
+  if (ConvertedRect.isEmpty() || !ConvertedRect.intersect(BmpRect)) { return; }
+  
+  // Get dst bitmap address and offset to the rect top
+  GPixel* DstPixels = (GPixel*)((char*)Bitmap.pixels() + Bitmap.fRowBytes * rect.top());
+  
+  // Set the context of the shader to the CTM
+  float TwoRows[6];
+  CTM.GetTwoRows(TwoRows);
+  shader->setContext(TwoRows);
+
+  //All rows will have the same number of pixels so we can allocate once for the whole rect
+  int count = rect.width();
+  GPixel* row = new GPixel[count];
+  for (int y = rect.top(); y < rect.bottom(); ++y)
+  {
+    shader->shadeRow(rect.left(), y, count, row);
+    blendRow(DstPixels, rect.left(), row, count);
+
+    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
+  }
+
+  delete[] row;
+}
+
+void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
+{
+  assert(Edges.size() > 1);
+
+  // Sort the edges from top to bottom, left to right
+  std::sort(Edges.begin(), Edges.end());
+
+  // The first two edges will be the top most edges
+  GEdge LeftEdge = Edges[0];
+  GEdge RightEdge = Edges[1];
+
+  // Get start of pixel address for bitmap and offset to the top row 
+  GPixel *DstPixels = (GPixel*)((char*)Bitmap.pixels() + Bitmap.fRowBytes * LeftEdge.top());
+
+  // Set the context in the shader to the CTM
+  float TwoRows[6];
+  CTM.GetTwoRows(TwoRows);
+  shader->setContext(TwoRows);
+  
+  int EdgeCounter = 2;
+  for (int y = LeftEdge.top(); y < Edges.back().bottom(); ++y)
+  {
+    int startX = Utility::round(LeftEdge.currentX());
+    int count = (int)(RightEdge.currentX() - LeftEdge.currentX());
+
+    count = Utility::clamp(1, count, BmpRect.width() - 1);
+
+    /* Allocate a row of pixels to calculate shader pixel values
+     * Then blend shader pixels into the dst bitmap */
+    GPixel *row = new GPixel[count];
+      shader->shadeRow(startX, y, count, row);
+      blendRow(DstPixels, startX, row, count);
+    delete[] row;  
+
+    // Move currentX of the edges to the next row
+    LeftEdge.MoveCurrentX(1.0f);
+    RightEdge.MoveCurrentX(1.0f);
+
+    /* Check left and right edge for y has passed bottom, if we have edges left then set the next edge */
+    if (y >= LeftEdge.bottom() && EdgeCounter < Edges.size())
+    {
+      LeftEdge = Edges[EdgeCounter];
+      ++EdgeCounter;
+    }
+    if (y >= RightEdge.bottom() && EdgeCounter < Edges.size())
+    {
+      RightEdge = Edges[EdgeCounter];
+      ++EdgeCounter;
+    }
+
+    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
+  }
 }
 
 GPixel MyCanvas::blend(const GPixel src, const GPixel dst)
@@ -64,192 +252,7 @@ void MyCanvas::blendRow(GPixel *Dst, int startX, GPixel row[], int count)
   }
 }
 
-/**
- * This function will clear the canvas according to the color.
- * Don't use a shader here for efficiency
- * */
-void MyCanvas::clear(const GColor& color)
-{
-  //Get the start of the bitmap _Pixels array
-  GPixel* DstPixels = Bitmap.pixels();
-  GPixel pColor = Utility::ColorToPixel(color);     //Convert input color into a pixel
-
-  int length = Bitmap.fHeight * Bitmap.fWidth;
-
-  for (int i = 0; i < length; ++i)
-  {
-    DstPixels[i] = pColor;
-  }
-}
-
-void MyCanvas::fillRect(const GRect& rect, const GColor& color)
-{
-  assert(!rect.isEmpty());
-
-  //Convert the color into a shader
-  GShader* shader = GShader::FromColor(color);
-  //Draw the rect
-  shadeRect(rect, shader);
-}
-
-void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
-{
-  assert(!dst.isEmpty());
-
-  // Get the matrix of the conversion from src to dst rect
-  auto LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
-
-  float localArr[6];
-  LocalMatrix.GetTwoRows(localArr);
-  //Create the shader for a bitmap
-  GShader* shader = GShader::FromBitmap(src, localArr);
-  //Shade the rectangle with the shader from the bitmap
-  shadeRect(dst, shader);
-}
-
-void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const GColor& color)
-{
-  assert(count > 2);
-
-  GShader* shader = GShader::FromColor(color);  //Make the shader for one color
-  shadeConvexPolygon(Points, count, shader);   // Fill polygon made by the converted points
-}
-
-void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
-{
-  auto Points = Utility::QuadToPoints(rect);  //Convert input rectangle into points
-
-  CTMPoints(Points);  //Convert the points by the CTM
-  //If the CTM does not keep rectangular shape we draw a polygon
-  if ( !CTM.preservesRect())  
-  {
-    auto Edges = pointsToEdges(Points);
-    shadeDevicePolygon(Edges, shader);
-    return;
-  }
-
-  //Convert the CTM'd points back into a rect since we know it preserves it
-  auto ConvertedRect = Utility::PointsToQuad(Points).round();
-
-  // Make sure rect is not an empty one and clip the edes from the bitmap with intersect
-  if (ConvertedRect.isEmpty() || !ConvertedRect.intersect(BmpRect)) 
-  {
-      return;
-  }
-
-  shadeDeviceRect(ConvertedRect, shader);
-}
-
-void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* shader)
-{
-  std::vector<GPoint> Points(points, points + count);
-
-  CTMPoints(Points);	//Multiply the Points by the CTM      
-  auto Edges = pointsToEdges(Points);
-
-  shadeDevicePolygon(Edges, shader);
-}
-
-void MyCanvas::shadeDeviceRect(const GIRect& rect, GShader* shader)
-{
-  GPixel* DstPixels = Bitmap.pixels();
-  DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes * rect.top());
-  
-  float TwoRows[6];
-  CTM.GetTwoRows(TwoRows);
-  shader->setContext(TwoRows);
-
-  //All rows will have the same number of pixels allocate for the row
-  int count = rect.width();
-  GPixel* row = new GPixel[count];
-  for (int y = rect.top(); y < rect.bottom(); ++y)
-  {
-    shader->shadeRow(rect.left(), y, count, row);
-    blendRow(DstPixels, rect.left(), row, count);
-
-    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
-  }
-
-  delete[] row;
-}
-
-void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
-{
-  assert(Edges.size() > 1);
-
-  // Sort the edges from top to bottom, left to right
-  std::sort(Edges.begin(), Edges.end());
-
-  // The first two edges will be the top most edges
-  GEdge LeftEdge = Edges[0];
-  GEdge RightEdge = Edges[1];
-
-  // Get start of pixel address for bitmap and offset to the top row 
-  GPixel *DstPixels = (GPixel*)((char*)Bitmap.pixels() + Bitmap.fRowBytes * LeftEdge.top());
-
-  float TwoRows[6];
-  CTM.GetTwoRows(TwoRows);
-
-  shader->setContext(TwoRows);
-  int EdgeCounter = 2;
-  for (int y = LeftEdge.top(); y < Edges.back().bottom(); ++y)
-  {
-    int startX = Utility::round(LeftEdge.currentX());
-    int count = (int)(RightEdge.currentX() - LeftEdge.currentX());
-
-    count = Utility::clamp(1, count, BmpRect.width() - 1);
-
-    /* Allocate a row of pixels to calculate shader pixel values*/
-    /* Then blend shader pixels into the dst bitmap*/
-    GPixel *row = new GPixel[count];
-      shader->shadeRow(startX, y, count, row);
-      blendRow(DstPixels, startX, row, count);
-    delete[] row;  
-
-    // Move currentX of the edges to the next row
-    LeftEdge.MoveCurrentX(1.0f);
-    RightEdge.MoveCurrentX(1.0f);
-
-    /* Check left edge to see if y has passed bottom and we have not reached max edges */
-    if (y >= LeftEdge.bottom() && EdgeCounter < Edges.size())
-    {
-	LeftEdge = Edges[EdgeCounter];
-	++EdgeCounter;
-    }
-    if (y >= RightEdge.bottom() && EdgeCounter < Edges.size())
-    {
- 	RightEdge = Edges[EdgeCounter];
-	++EdgeCounter;
-    }
-
-    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
-  }
-}
-
-void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const Stroke& stroke, GShader* shader)
-{
-  assert(n > 1);
-
-  std::vector<GQuad> Shells;
-
-  /*Calculate every shell and store it into the vector*/
-  for (int i = 0; i < n - 1; ++i)
-  {
-    Shells.emplace_back(GQuad{Points[i], Points[i + 1], stroke.fWidth});
-  }
-
-  for (auto Shell: Shells)
-  {
-    auto Points = Shell.getPoints();
-    CTMPoints(Points);
-    auto Edges = pointsToEdges(Points);
-
-    shadeDevicePolygon(Edges, shader);
-  }
-}
-
-/************************************************************************/
-//Current Transformation Functions
+/*******************************Current Transformation Fuctions***************************************/
 
 void MyCanvas::save()
 {
@@ -280,14 +283,13 @@ void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
   }
 }
 
-/************************************************************************/
-//Edge creation functions
+/*******************************Edge Creation Functions***********************************************/
 
 std::vector<GEdge> MyCanvas::pointsToEdges(std::vector<GPoint>& Points) const
 {
-  SortPointsForConvex(Points);  //Sort the points into an order we can make edges with
-  auto Edges = MakeConvexEdges(Points);   //Make edges out of the sorted points
-  ClipEdges(Edges);			  //Clip the edges from the dst bitmap
+  SortPointsForConvex(Points);          //Sort the points into an order we can make edges with
+  auto Edges = MakeConvexEdges(Points); //Make edges out of the sorted points
+  ClipEdges(Edges);			                //Clip the edges from the dst bitmap
   return Edges;
 }
 
@@ -298,8 +300,8 @@ void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
     return ( std::fabs(a.y() - b.y() ) < .0001) ? a.x() > b.x() : a.y() < b.y();
   });
 
-  std::queue<GPoint> RightPoints;  //Queue to hold all Points right of the pivot
-  std::stack<GPoint> LeftPoints;   //Stack to hold all Points left of the pivot
+  std::queue<GPoint> RightPoints;  //Hold all points right of the pivot
+  std::stack<GPoint> LeftPoints;   //Hold all points left of the pivot
 
   /* Start from 2nd value because top is the pivot */
   for (auto Point = Points.begin() + 1; Point != Points.end() - 1; ++Point)
@@ -312,10 +314,10 @@ void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
       LeftPoints.push(*Point);	 
     }
 
-    /* We store the value of RightPoints to get a proper increment later */
+    // We store the value of RightPoints to use as an offset later
     const auto RightSize = RightPoints.size();
 
-    /* Points: Order Diagram - TopPivot, RightPoints ... RightPoints.end() - 1, BottomPivot, LeftPoints ... LeftPoints.end() */
+    /* Points: Order Diagram - TopPivot, RightPoints - RightPoints.end() - 1, BottomPivot, LeftPoints - LeftPoints.end() */
     for (auto Point = Points.begin() + 1; !RightPoints.empty(); ++Point)
     {
        *Point = RightPoints.front();
@@ -340,7 +342,8 @@ std::vector<GEdge> MyCanvas::MakeConvexEdges(const std::vector<GPoint>& Points)
   auto Penultimate = --Points.end();
 
   // Create an edge between all points 
-  for (auto Point = Points.begin(); Point != Penultimate; ++Point) {
+  for (auto Point = Points.begin(); Point != Penultimate; ++Point) 
+  {
     Edges.emplace_back(*Point, *(Point + 1)); 
   }
 
@@ -349,6 +352,8 @@ std::vector<GEdge> MyCanvas::MakeConvexEdges(const std::vector<GPoint>& Points)
 
   return Edges;
 }
+
+/******************************Edge Clip Functions ***************************************************/
 
 void MyCanvas::ClipEdges(std::vector<GEdge>& Edges) const
 {
@@ -370,7 +375,7 @@ void MyCanvas::ClipEdgesTopAndBottom(std::vector<GEdge>& Edges) const
   {
     /* Pin the top and bottom of the edges that are out of bitmap vertical
      * Will return false if the value needs to be removed*/
-    if ( !Edge->PinTopAndBot(height) ) {
+    if ( !Edge->pinTopAndBot(height) ) {
       Edge = Edges.erase(Edge);	//Remove all horizontal edges, and edges off screen
     }
     else {
@@ -387,8 +392,8 @@ void MyCanvas::ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewE
     /* If entire segment is to the left pin it to the edge*/
     if (Edge.currentX() < 0 && Edge.bottomX() < 0)
     {
-      Edge.SetCurrentX(0);
-      Edge.MakeSlopeVertical();
+      Edge.setCurrentX(0);
+      Edge.makeSlopeVertical();
 
       continue;
     }
@@ -401,9 +406,9 @@ void MyCanvas::ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewE
       /* Add in new clipped edge*/
       NewEdges.emplace_back(GPoint::Make(0, Edge.top()),GPoint::Make(0, ClipY));
       /* Move the CurrentX to the edge (0, ClipY)*/
-      Edge.SetCurrentX(0);
+      Edge.setCurrentX(0);
       /* Change the top of clipped edge from old to new ClipY value*/
-      Edge.SetTop(Utility::round(ClipY));
+      Edge.setTop(Utility::round(ClipY));
     }
 
     /* If the bottom point of the edge is to the left of the bitmap*/
@@ -413,7 +418,7 @@ void MyCanvas::ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewE
       float ClipY = Edge.top() - Edge.currentX() / Edge.slope();
       /* Add new clipped edge to NewEdges */
       NewEdges.emplace_back(GPoint::Make(0, ClipY), GPoint::Make(0, Edge.bottom()));
-      Edge.SetBottom(Utility::round(ClipY));  //Set the bottom of the edge to the new clipY
+      Edge.setBottom(Utility::round(ClipY));  //Set the bottom of the edge to the new clipY
     }
   }
 }
@@ -428,8 +433,8 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
     /* If the edge is completely to the right of the bitmap*/
     if (Edge.currentX() > width && Edge.bottomX() > width)
     {
-      Edge.SetCurrentX(width);	//Set the CurrentX to the bitmap width
-      Edge.MakeSlopeVertical();	//Set the slope to 0. WARNING: This implementation could be better
+      Edge.setCurrentX(width);	//Set the CurrentX to the bitmap width
+      Edge.makeSlopeVertical();	//Set the slope to 0. WARNING: This implementation could be better
       continue;          	//Go to next edge
     }
 
@@ -441,8 +446,8 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
       float ClipY = Edge.top() + ( width - Edge.currentX()) / Edge.slope();
       /* Make a new edge from clipped y and old Top*/
       NewEdges.emplace_back(GPoint::Make(width, Edge.top()), GPoint::Make(width, ClipY));
-      Edge.SetCurrentX(width);			//Set the CurrentX to the bitmap width
-      Edge.SetTop(Utility::round(ClipY));	//Set the top of clipped edge to the rounded ClipY
+      Edge.setCurrentX(width);			//Set the CurrentX to the bitmap width
+      Edge.setTop(Utility::round(ClipY));	//Set the top of clipped edge to the rounded ClipY
     }
 
     /* If the bottom of the edge needs to be clipped right
@@ -453,7 +458,7 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
       float ClipY = Edge.top() + ( width - Edge.currentX()) / Edge.slope();
       /* Make new edge from the ClipY and the old bottom*/
       NewEdges.emplace_back(GPoint::Make(width, ClipY), GPoint::Make(width, Edge.bottom()));
-      Edge.SetBottom(Utility::round(ClipY));	//Set bottom of clipped edge to rounded ClipY
+      Edge.setBottom(Utility::round(ClipY));	//Set bottom of clipped edge to rounded ClipY
     }
   }
 }
