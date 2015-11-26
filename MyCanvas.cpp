@@ -329,8 +329,7 @@ void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
 
 std::vector<GEdge> MyCanvas::pointsToEdges(std::vector<GPoint>& Points)
 {
-  //SortPointsForConvex(Points);          //Sort the points into an order we can make edges with
-
+  SortPointsForConvex(Points);          //Sort the points into an order we can make edges with
   auto Edges = MakeConvexEdges(Points); //Make edges out of the sorted points
 
   auto PreClip = MakeConvexEdges(Points);
@@ -372,26 +371,26 @@ void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
     else {
       LeftPoints.push(*Point);	 
     }
+  }
+   
+  // We store the value of RightPoints to use as an offset later
+  const auto RightSize = RightPoints.size();
 
-    // We store the value of RightPoints to use as an offset later
-    const auto RightSize = RightPoints.size();
+  /* Points: Order Diagram - TopPivot, RightPoints - RightPoints.end() - 1, BottomPivot, LeftPoints - LeftPoints.end() */
+  for (auto Point = Points.begin() + 1; !RightPoints.empty(); ++Point)
+  {
+    *Point = RightPoints.front();
+    RightPoints.pop();
+  }
 
-    /* Points: Order Diagram - TopPivot, RightPoints - RightPoints.end() - 1, BottomPivot, LeftPoints - LeftPoints.end() */
-    for (auto Point = Points.begin() + 1; !RightPoints.empty(); ++Point)
-    {
-       *Point = RightPoints.front();
-       RightPoints.pop();
-    }
+  /* Set the middle point to be the bottom most point */
+  Points[RightSize + 1] = Points.back();
 
-    /* Set the middle point to be the bottom most point */
-    Points[RightSize + 1] = Points.back();
-
-    /* If the LeftPoints are not empty store them*/
-    for (auto i = RightSize + 2; !LeftPoints.empty(); ++i)
-    {
-      Points[i] = LeftPoints.top();  //Copy over from left stack
-      LeftPoints.pop();									     
-    }
+  /* If the LeftPoints are not empty store them*/
+  for (auto i = RightSize + 2; !LeftPoints.empty(); ++i)
+  {
+    Points[i] = LeftPoints.top();  //Copy over from left stack
+    LeftPoints.pop();									     
   }
 }
 
