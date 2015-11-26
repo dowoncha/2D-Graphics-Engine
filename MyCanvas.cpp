@@ -135,11 +135,6 @@ void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* sha
   CTMPoints(Points);	
   auto Edges = pointsToEdges(Points);
 
-  for (auto Edge: Edges)
-  {
-    printf("Edges Top: %d, Bottom: %d, Slope: %f\n", Edge.top(), Edge.bottom(), Edge.slope());
-  }
-
   shadeDevicePolygon(Edges, shader);
 }
 
@@ -212,7 +207,6 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
     return;
   }
 
-
   // Sort the edges from top to bottom, left to right
   std::sort(Edges.begin(), Edges.end());
 
@@ -232,7 +226,7 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
   for (int y = LeftEdge.top(); y < Edges.back().bottom(); ++y)
   {
     int startX = Utility::round(LeftEdge.currentX());
-    int count = (int)(RightEdge.currentX() - LeftEdge.currentX());
+    int count = (int)RightEdge.currentX() - (int)LeftEdge.currentX();
 
     count = Utility::clamp(1, count, BmpRect.width() - 1);
 
@@ -333,7 +327,7 @@ void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
 
 /*******************************Edge Creation Functions***********************************************/
 
-std::vector<GEdge> MyCanvas::pointsToEdges(std::vector<GPoint>& Points) const
+std::vector<GEdge> MyCanvas::pointsToEdges(std::vector<GPoint>& Points)
 {
   SortPointsForConvex(Points);          //Sort the points into an order we can make edges with
   auto Edges = MakeConvexEdges(Points); //Make edges out of the sorted points

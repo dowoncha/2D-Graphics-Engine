@@ -83,7 +83,7 @@ private:
   void shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader);
   
   /* Points will be sorted in place, and then edges will be created and clipped*/
-  std::vector<GEdge> pointsToEdges(std::vector<GPoint>& Points) const;
+  std::vector<GEdge> pointsToEdges(std::vector<GPoint>& Points);
   
   /* Convert input points by the CTM */
   void CTMPoints(std::vector<GPoint>& Points) const;
