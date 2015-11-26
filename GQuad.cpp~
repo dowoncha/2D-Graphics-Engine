@@ -1,0 +1,13 @@
+#include "GQuad.h"
+
+GQuad()
+{
+
+
+}
+
+~GQuad()
+{
+
+
+}
