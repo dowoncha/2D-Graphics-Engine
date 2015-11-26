@@ -31,9 +31,9 @@ inline int round(float a)
 
 GPixel ColorToPixel(const GColor& color);
 
-std::vector<GPoint> QuadToPoints(const GRect& Rect);
+std::vector<GPoint> RectToPoints(const GRect& Rect);
 
-GRect PointsToQuad(const std::vector<GPoint>& Points);
+GRect PointsToRect(const std::vector<GPoint>& Points);
 
 GMatrix<float> RectToRect(const GRect& src, const GRect& dst);
 

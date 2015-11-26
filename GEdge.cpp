@@ -27,7 +27,7 @@ bool GEdge::operator<(const GEdge& c) const
   return std::tie(nTop, rX, fSlope) < std::tie(c.nTop, cRX, c.fSlope);
 }
 
-bool GEdge::PinTopAndBot(int Height)
+bool GEdge::pinTopAndBot(int Height)
 {
   //Error edge segment is entirely out of bitmap just ignore
   if (nBottom < 0 || nTop >= Height) {

@@ -26,11 +26,11 @@ GCanvas* GCanvas::Create(const GBitmap& bitmap)
 
 void MyCanvas::clear(const GColor& color)
 {
-  //Get the start of the bitmap _Pixels array
+  //Get the start of the bitmap Pixels array
   GPixel* DstPixels = Bitmap.pixels();
   GPixel pColor = Utility::ColorToPixel(color);     //Convert input color into a pixel
 
-  int length = Bitmap.fHeight * Bitmap.fWidth;
+  int length = Bitmap.height() * Bitmap.width();
 
   for (int i = 0; i < length; ++i)
   {
@@ -42,43 +42,37 @@ void MyCanvas::fillRect(const GRect& rect, const GColor& color)
 {
   assert(!rect.isEmpty());
 
-  GPixel pColor = Utility::ColorToPixel(color);
-  
-  GPixel* DstPixels = Bitmap.pixels();
-  DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes * rect.top());
-  
-  for (int y = rect.fTop; y < rect.fBottom; ++y)
-  {
-    for (int x = rect.fLeft; y < rect.fRight; ++x)
-    {
-      DstPixels[x] = blend(pColor, DstPixels[x]);
-    }
-    
-    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes);
-  }
+  GShader* shader = GShader::FromColor(color);
+
+  shadeRect(rect, shader);
+
+  delete shader;
 }
 
 void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 {
   assert(!dst.isEmpty());
 
-  // Get the matrix of the conversion from src to dst rect
+  /* Get the matrix of the conversion from src to dst rect
+   * Use the rect to rect matrix to create bitmap shader */
   auto LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
-
   float localArr[6];
   LocalMatrix.GetTwoRows(localArr);
-  //Create the shader for a bitmap
   GShader* shader = GShader::FromBitmap(src, localArr);
-  //Shade the rectangle with the shader from the bitmap
+
   shadeRect(dst, shader);
+
+  delete shader;
 }
 
 void MyCanvas::fillConvexPolygon(const GPoint Points[], int count, const GColor& color)
 {
   assert(count > 2);
-
+  
   GShader* shader = GShader::FromColor(color);  //Make the shader for one color
   shadeConvexPolygon(Points, count, shader);
+
+  delete shader;
 }
 
 void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
@@ -96,6 +90,9 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 
   //Convert the CTM'd points back into a rect since we know it preserves it
   auto ConvertedRect = Utility::PointsToRect(Points).round();
+
+  // Make sure rect is not an empty one and clip the edges from the bitmap with intersect
+  if (ConvertedRect.isEmpty() || !ConvertedRect.intersect(BmpRect)) { return; }
 
   shadeDeviceRect(ConvertedRect, shader);
 }
@@ -135,10 +132,7 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
 /***********************************Device Drawing Functions *****************************************/
 
 void MyCanvas::shadeDeviceRect(const GIRect& rect, GShader* shader)
-{
-  // Make sure rect is not an empty one and clip the edges from the bitmap with intersect
-  if (ConvertedRect.isEmpty() || !ConvertedRect.intersect(BmpRect)) { return; }
-  
+{  
   // Get dst bitmap address and offset to the rect top
   GPixel* DstPixels = (GPixel*)((char*)Bitmap.pixels() + Bitmap.fRowBytes * rect.top());
   
@@ -155,7 +149,7 @@ void MyCanvas::shadeDeviceRect(const GIRect& rect, GShader* shader)
     shader->shadeRow(rect.left(), y, count, row);
     blendRow(DstPixels, rect.left(), row, count);
 
-    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.rowBytes());
+    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes);
   }
 
   delete[] row;
@@ -189,15 +183,15 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
     count = Utility::clamp(1, count, BmpRect.width() - 1);
 
     /* Allocate a row of pixels to calculate shader pixel values
-     * Then blend shader pixels into the dst bitmap */
+     * then blend shader pixels into the dst bitmap */
     GPixel *row = new GPixel[count];
       shader->shadeRow(startX, y, count, row);
       blendRow(DstPixels, startX, row, count);
     delete[] row;  
 
     // Move currentX of the edges to the next row
-    LeftEdge.MoveCurrentX(1.0f);
-    RightEdge.MoveCurrentX(1.0f);
+    LeftEdge.moveCurrentX(1.0f);
+    RightEdge.moveCurrentX(1.0f);
 
     /* Check left and right edge for y has passed bottom, if we have edges left then set the next edge */
     if (y >= LeftEdge.bottom() && EdgeCounter < Edges.size())
