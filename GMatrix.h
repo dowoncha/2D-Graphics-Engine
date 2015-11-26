@@ -159,7 +159,7 @@ public:
     return *this;
   }
 
-  GMatrix<T> inverse() const                       //Calculate the inverse of the matrix and return the new matrix
+  GMatrix<T> inverse() const  //Calculate the inverse of the matrix and return the new matrix
   {
     const T& a11 = Matrix[0], a12 = Matrix[1], a13 = Matrix[2];
     const T& a21 = Matrix[3], a22 = Matrix[4], a23 = Matrix[5];
@@ -191,7 +191,8 @@ public:
     }
   }
 
-  bool preservesRect() const {                  //Checks to see if matrix preserves rectangle shape
+  bool preservesRect() const  //Checks to see if matrix preserves rectangle shape
+  {
     return Matrix[1] == T(0.0) && Matrix[3] == T(0.0);
   }
 };

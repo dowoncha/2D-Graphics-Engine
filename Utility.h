@@ -1,5 +1,8 @@
-//Copyright 2015 Dowon Cha
-
+/* 
+ * Copyright 2015 Dowon Cha
+ * Set of helper functions to use in project. Contains various clamp functions
+ * Along with polygon conversion functions
+ */
 #pragma once
 
 #include <vector>

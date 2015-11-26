@@ -1,5 +1,7 @@
 #include "Utility.h"
 
+namespace Utility
+{
 GPixel ColorToPixel(const GColor& color)
 {
   GColor pinned = color.pinToUnit();            //Make sure color is between 0 and 1
@@ -52,3 +54,5 @@ GMatrix<float> RectToRect(const GRect& src, const GRect& dst)
 
   return DstTranslate;
 }
+
+} //namespace Utility

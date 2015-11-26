@@ -8,7 +8,7 @@ LinearShader::LinearShader(const GPoint pts[2], const GColor colors[2])
   float dx = pts[1].fX - pts[0].fX;
   float dy = pts[1].fY - pts[0].fY;
   float LocalArr[6] = { dx, -dy, pts[0].fX,
-                        dy, dx,         pts[0].fY };
+                        dy, dx,  pts[0].fY };
 
   LocalMatrix.setMatrix(LocalArr, 6);
 }
