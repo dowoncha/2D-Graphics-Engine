@@ -311,13 +311,11 @@ void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
   for (auto Point = Points.begin() + 1; Point != Points.end() - 1; ++Point)
   {
     /* If the x value of the Point is greater than or equal to the top point x*/
-    if ( Point->x() >= Points.front().x())
-    {
-      RightPoints.push(*Point);		//Add to right queue
+    if ( Point->x() >= Points.front().x()) {
+      RightPoints.push(*Point);  //Add to right queue
     }
-    else
-    {
-      LeftPoints.push(*Point);		//Add to left stack
+    else {
+      LeftPoints.push(*Point);	 //Add to left stack
     }
 
     /* We store the value of RightPoints to get a proper increment later */
@@ -361,13 +359,13 @@ std::vector<GEdge> MyCanvas::MakeConvexEdges(const std::vector<GPoint>& Points)
 
 void MyCanvas::ClipEdges(std::vector<GEdge>& Edges) const
 {
-  std::vector<GEdge> NewEdges;			//New edges that will be created from side clipping
+  std::vector<GEdge> NewEdges;  //New edges that will be created from side clipping
 
-  ClipEdgesTopAndBottom(Edges);			//Pin top and bottom edges
-  ClipEdgesLeft(Edges, NewEdges);		//Pin left edges, create new edges from clipping
-  ClipEdgesRight(Edges, NewEdges);	//Pin right edges, create new edges from clipping
+  ClipEdgesTopAndBottom(Edges);	    //Pin top and bottom edges
+  ClipEdgesLeft(Edges, NewEdges);   //Pin left edges, create new edges from clipping
+  ClipEdgesRight(Edges, NewEdges);  //Pin right edges, create new edges from clipping
 
-	/* Copy over all clipped new edges into the original edge vector */
+  /* Copy over all clipped new edges into the original edge vector */
   Edges.insert(Edges.end(), NewEdges.begin(), NewEdges.end());
 }
 
@@ -375,18 +373,15 @@ void MyCanvas::ClipEdgesTopAndBottom(std::vector<GEdge>& Edges) const
 {
   const int height = BmpRect.height();			//The height of the bitmap
 
-  /* Clip all Edges*/
   for (auto Edge = Edges.begin(); Edge != Edges.end(); )
   {
     /* Pin the top and bottom of the edges that are out of bitmap vertical*/
     /* Will return false if the value needs to be removed*/
-    if ( !Edge->PinTopAndBot(height) ) 
-    {
-	Edge = Edges.erase(Edge);	//Remove all horizontal edges, and edges off screen
+    if ( !Edge->PinTopAndBot(height) ) {
+      Edge = Edges.erase(Edge);	//Remove all horizontal edges, and edges off screen
     }
-    else 
-    {
-	++Edge;		//If we don't remove a value then we increment the iterator
+    else {
+      ++Edge;		//If we don't remove a value then we increment the iterator
     }
   }
 }
@@ -452,7 +447,7 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
       /* Get the Y value to clip the edge at*/
       float ClipY = Edge.top() + ( width - Edge.currentX()) / Edge.slope();
       /* Make a new edge from clipped y and old Top*/
-      NewEdges.emplace_back(GPoint::Make(width, Edge.top()), GPoint::Make(width, ClipY));
+      NewEdges.emplace_back(GPoint{width, Edge.top()}, GPoint{width, ClipY});
       Edge.SetCurrentX(width);			//Set the CurrentX to the bitmap width
       Edge.SetTop(Utility::round(ClipY));	//Set the top of clipped edge to the rounded ClipY
     }
@@ -464,8 +459,8 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
       /* Get the ClipY value*/
       float ClipY = Edge.top() + ( width - Edge.currentX()) / Edge.slope();
       /* Make new edge from the ClipY and the old bottom*/
-      NewEdges.emplace_back(GPoint::Make(width, ClipY), GPoint::Make(width, Edge.bottom()));
-      Edge.SetBottom((int)(ClipY + .5));	//Set bottom of clipped edge to rounded ClipY
+      NewEdges.emplace_back(GPoint{width, ClipY}, GPoint{width, Edge.bottom()});
+      Edge.SetBottom(Utility::round(ClipY));	//Set bottom of clipped edge to rounded ClipY
     }
   }
 }
