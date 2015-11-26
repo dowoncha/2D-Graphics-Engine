@@ -104,7 +104,7 @@ public:
     y = NewY;
   }
 
-  GMatrix<T> operator*(const GMatrix<T>& InMat)
+  GMatrix<T> operator*(const GMatrix<T>& InMat) const
   {
     std::array<T, 9> ConcatMat;
     std::array<T, 6> RowCol;

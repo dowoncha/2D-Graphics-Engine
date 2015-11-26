@@ -29,6 +29,7 @@ inline int round(float a)
   return (int)std::floor(a + .5);
 }
 
+/* Convert the input color into pixel*/
 GPixel ColorToPixel(const GColor& color);
 
 std::vector<GPoint> RectToPoints(const GRect& Rect);
@@ -37,6 +38,7 @@ GRect PointsToRect(const std::vector<GPoint>& Points);
 
 GMatrix<float> RectToRect(const GRect& src, const GRect& dst);
 
+// Clamp functions for later on
 // 1. Clamp Min(max(0,t), 1)
 // 2. t - floor(t)
 // 3. t=(t-floor(t))*2; if (t > 1) t = 2-t;

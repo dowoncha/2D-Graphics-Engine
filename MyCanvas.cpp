@@ -43,9 +43,7 @@ void MyCanvas::fillRect(const GRect& rect, const GColor& color)
   assert(!rect.isEmpty());
 
   GShader* shader = GShader::FromColor(color);
-
   shadeRect(rect, shader);
-
   delete shader;
 }
 
@@ -71,7 +69,6 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], int count, const GColor&
   
   GShader* shader = GShader::FromColor(color);  //Make the shader for one color
   shadeConvexPolygon(Points, count, shader);
-
   delete shader;
 }
 
@@ -101,7 +98,7 @@ void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* sha
 {
   std::vector<GPoint> Points(points, points + count);
 
-  CTMPoints(Points);	//Multiply the Points by the CTM      
+  CTMPoints(Points);	
   auto Edges = pointsToEdges(Points);
 
   shadeDevicePolygon(Edges, shader);
@@ -392,27 +389,26 @@ void MyCanvas::ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewE
       continue;
     }
 
-    /* If the top point is to the left of the bitmap*/
+    /* If the top currentX is to the left of the bitmap*/
     if (Edge.currentX() < 0)
     {
-      /* Find the dx between edge and current x and the y point at the new x*/
+      /* Find the new y between edge and current x and the y point at the new x
+       * Make a new edge of the clipped edge on the side
+       * Set the current clipped edge to 0 current x and clip the top of the current edge */
       float ClipY = Edge.top() - Edge.currentX() / Edge.slope();
-      /* Add in new clipped edge*/
       NewEdges.emplace_back(GPoint::Make(0, Edge.top()),GPoint::Make(0, ClipY));
-      /* Move the CurrentX to the edge (0, ClipY)*/
       Edge.setCurrentX(0);
-      /* Change the top of clipped edge from old to new ClipY value*/
       Edge.setTop(Utility::round(ClipY));
     }
 
-    /* If the bottom point of the edge is to the left of the bitmap*/
+    /* If the bottom x of the edge is to the left of the bitmap*/
     if (Edge.bottomX() < 0)
     {
-      /* The Clipped y value is the top - currentX (pos) / slope (neg)*/
+      /* The Clipped y value is the top - currentX (pos) / slope (neg)
+       * add the pinned edge to the set of new edges and clip the current edge bottom */
       float ClipY = Edge.top() - Edge.currentX() / Edge.slope();
-      /* Add new clipped edge to NewEdges */
       NewEdges.emplace_back(GPoint::Make(0, ClipY), GPoint::Make(0, Edge.bottom()));
-      Edge.setBottom(Utility::round(ClipY));  //Set the bottom of the edge to the new clipY
+      Edge.setBottom(Utility::round(ClipY));
     }
   }
 }
@@ -421,7 +417,6 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
 {
   const int width = BmpRect.width();		//Get width of the bitmap
 
-  /* Run for all edges */
   for (auto &Edge: Edges)
   {
     /* If the edge is completely to the right of the bitmap*/
@@ -436,23 +431,22 @@ void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& New
      * Assumptions: Slope: negative, CurrentX > width, BottomX < width */
     if (Edge.currentX() > width)
     {
-      /* Get the Y value to clip the edge at*/
+      /* Get the Y value to clip the edge at
+       * Add new pinned edge into new edges vector and clip the current edge */
       float ClipY = Edge.top() + ( width - Edge.currentX()) / Edge.slope();
-      /* Make a new edge from clipped y and old Top*/
       NewEdges.emplace_back(GPoint::Make(width, Edge.top()), GPoint::Make(width, ClipY));
-      Edge.setCurrentX(width);			//Set the CurrentX to the bitmap width
-      Edge.setTop(Utility::round(ClipY));	//Set the top of clipped edge to the rounded ClipY
+      Edge.setCurrentX(width);		
+      Edge.setTop(Utility::round(ClipY));
     }
 
     /* If the bottom of the edge needs to be clipped right
      * Assumptions: Slope: positive, CurrentX < width, BottomX > width */
     if (Edge.bottomX() > width)
     {
-      /* Get the ClipY value*/
+      /* Get the ClipY value, add new pinned edge to new edges and clip the current edge*/
       float ClipY = Edge.top() + ( width - Edge.currentX()) / Edge.slope();
-      /* Make new edge from the ClipY and the old bottom*/
       NewEdges.emplace_back(GPoint::Make(width, ClipY), GPoint::Make(width, Edge.bottom()));
-      Edge.setBottom(Utility::round(ClipY));	//Set bottom of clipped edge to rounded ClipY
+      Edge.setBottom(Utility::round(ClipY));
     }
   }
 }

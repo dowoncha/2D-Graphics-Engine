@@ -34,20 +34,20 @@ bool GEdge::pinTopAndBot(int Height)
     return false;
   }
 
-  /* First pin the top point if it is above the bitmap*/
+  // First pin the top point if it is above the bitmap
   if ( nTop < 0 )
   {
-    /* Move the currentX by the slope * dx */
+    // Move the currentX by the slope * dx 
     fCurrentX -= fSlope * nTop;
     nTop = 0;
   }
 
-  /* If the bottom of the point is below the bitmap just set bottom of line to bitmap height */
+  // If the bottom of the point is below the bitmap just set bottom of line to bitmap height
   if (nBottom > Height) {
     nBottom = Height;
   }
  
-  /* Delete all edges that are horizontal AKA infinite slope*/
+  // Delete all edges that are horizontal AKA infinite slope
   if (std::isinf(fSlope)) {
     return false;
   }
