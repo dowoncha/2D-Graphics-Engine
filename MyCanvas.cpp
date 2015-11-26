@@ -329,9 +329,26 @@ void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
 
 std::vector<GEdge> MyCanvas::pointsToEdges(std::vector<GPoint>& Points)
 {
-  SortPointsForConvex(Points);          //Sort the points into an order we can make edges with
+  //SortPointsForConvex(Points);          //Sort the points into an order we can make edges with
+
   auto Edges = MakeConvexEdges(Points); //Make edges out of the sorted points
+
+  auto PreClip = MakeConvexEdges(Points);
+
   ClipEdges(Edges);                     //Clip the edges from the dst bitmap
+
+  /*  printf("Preclipped\n");
+    for (auto Edge: PreClip)
+    {
+      Edge.printEdge();
+    }
+
+    printf("Clipped\n");
+    for (auto Edge: Edges )
+    {
+      Edge.printEdge();
+    }
+  */
   return Edges;
 }
 
@@ -411,17 +428,17 @@ void MyCanvas::ClipEdges(std::vector<GEdge>& Edges) const
 
 void MyCanvas::ClipEdgesTopAndBottom(std::vector<GEdge>& Edges) const
 {
-  const int height = BmpRect.height();			//The height of the bitmap
+  const int height = BmpRect.height();  //The height of the bitmap
 
-  for (auto Edge = Edges.begin(); Edge != Edges.end(); )
+  for (auto it = Edges.begin(); it != Edges.end(); )
   {
     /* Pin the top and bottom of the edges that are out of bitmap vertical
      * Will return false if the value needs to be removed*/
-    if ( !Edge->pinTopAndBot(height) ) {
-      Edge = Edges.erase(Edge);	//Remove all horizontal edges, and edges off screen
+    if ( !it->pinTopAndBot(height) ) {
+      it = Edges.erase(it);	//Remove all horizontal edges, and edges off screen
     }
     else {
-      ++Edge;		//If we don't remove a value then we increment the iterator
+      ++it;		//If we don't remove a value then we increment the iterator
     }
   }
 }
@@ -466,11 +483,11 @@ void MyCanvas::ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewE
 
 void MyCanvas::ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges) const
 {
-  const int width = BmpRect.width();		//Get width of the bitmap
+  const int width = BmpRect.width();  //Get width of the bitmap
 
   for (auto &Edge: Edges)
   {
-    /* If the edge is completely to the right of the bitmap*/
+    // If the edge is completely to the right of the bitmap
     if (Edge.currentX() > width && Edge.bottomX() > width)
     {
       Edge.setCurrentX(width);	//Set the CurrentX to the bitmap width

@@ -41,4 +41,9 @@ public:
 
   bool pinTopAndBot(int Height);
   bool operator< (const GEdge& c) const;
+
+  void printEdge() const
+  {
+    printf("Edge Top: %d, Bottom: %d, Slope: %f, CurrentX: %f\n", nTop, nBottom, fSlope, fCurrentX);
+  }
 };
