@@ -20,10 +20,7 @@
 #include "GPixel.h"
 #include "GColor.h"
 #include "GRect.h"
-<<<<<<< HEAD
 #include "GQuad.h"
-=======
->>>>>>> ef8b4d04e30d019dc79aad1487ddf65311bc52f8
 #include "GEdge.h"
 #include "GMatrix.h"
 #include "GShader.h"
@@ -40,7 +37,6 @@
 class MyCanvas : public GCanvas
 {
 public:
-<<<<<<< HEAD
   MyCanvas(const GBitmap& bitmap);
   ~MyCanvas();
 
@@ -93,59 +89,11 @@ private:
   void ClipEdgesTopAndBottom(std::vector<GEdge>& Edges) const;
   void ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges) const;
   void ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges) const;
-=======
-	MyCanvas(const GBitmap& bitmap);
-
-	~MyCanvas();
-
-	using COLORBYTE = uint8_t;
-
-	class SizeViolation {};
-
-	/* C style arrays are used here due to the assignment restrictions in implementing functions definitions in GCanvas*/
-	/** Fill the entire canvas with the specified color, using SRC porter-duff mode. **/
-	void clear(const GColor& color) override;
-	/* Fill a rect with a color or a bitmap*/
-	void fillRect(const GRect&, const GColor&) override;
-	void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
-	void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
-
-	void shadeRect(const GRect& rect, GShader* shader) override;
-	void shadeConvexPolygon(const GPoint points[], int count, GShader* shader) override;
-	void shadeDevicePolygon(std::vector<GPoint>& Points, GShader* shader);
-
-	void strokePolygon(const GPoint[], int n, bool isClosed, const Stroke&, GShader*) override;
-
-	/* Current Transformation Matrix functions*/
-	void save() override;
-	void restore() override;
-	void concat(const float matrix[6]) override;
-
-	/* These functions tend to use vectors and stl containers more because
-	 * they are not limited by the GCanvas function definitions */
-	// Convert input points by the CTM
-	void CTMPoints(std::vector<GPoint>& Points) const;
-	// Multiply Divide multiply again by 255 and round 2 Colors into another
-  static unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);
-	// Blends two Pixel's into a new pixel
-	GPixel Blend(const GPixel src, const GPixel dst);
-	//Blend an entire row of pixels
-	void BlendRow(GPixel *Dst, int startX, GPixel row[], int count);
-	// Sort the points for the convex
-	static void SortPointsForConvex(std::vector<GPoint>& Points);
-	// This will take a set of points and make them into edges for a convex polygon
-	static std::vector<GEdge> MakeConvexEdges(const std::vector<GPoint>& Points);
-	// Any edge with a point outside the bitmap width is now pinned and a in bound edge is now created
-	void ClipEdges(std::vector<GEdge>& Edges) const;
-	void ClipEdgesTopAndBottom(std::vector<GEdge>& Edges) const;
-	void ClipEdgesLeft(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges) const;
-	void ClipEdgesRight(std::vector<GEdge>& Edges, std::vector<GEdge>& NewEdges) const;
->>>>>>> ef8b4d04e30d019dc79aad1487ddf65311bc52f8
 private:
-	const GBitmap Bitmap;
-	const GIRect BmpRect;
-	std::stack<GMatrix<float>> MatrixStack;
-	GMatrix<float> CTM;
+  const GBitmap Bitmap;
+  const GIRect BmpRect;
+  std::stack<GMatrix<float>> MatrixStack;
+  GMatrix<float> CTM;
 };
 
 inline unsigned MyCanvas::MulDiv255Round(const COLORBYTE a, const COLORBYTE b)
