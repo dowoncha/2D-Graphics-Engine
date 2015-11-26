@@ -40,8 +40,6 @@ public:
   MyCanvas(const GBitmap& bitmap);
   ~MyCanvas();
 
-  using COLORBYTE = uint8_t;
-
   class SizeViolation {};
 
   /* Fill the entire canvas with the specified color */
@@ -91,10 +89,10 @@ private:
   void CTMPoints(std::vector<GPoint>& Points) const;
   
   /* Multiply Divide multiply again by 255 and round 2 Colors into another */
-  static unsigned MulDiv255Round(const COLORBYTE a, const COLORBYTE b);
+  static unsigned MulDiv255Round(uint8_t a, uint8_t b);
   
   /* Blends two Pixel's into a new pixel */
-  GPixel blend(const GPixel src, const GPixel dst);
+  GPixel blend(GPixel src, GPixel dst);
   
   /* Blend an entire row of pixels */
   void blendRow(GPixel *Dst, int startX, GPixel row[], int count);
@@ -119,7 +117,7 @@ private:
   GMatrix<float> CTM;
 };
 
-inline unsigned MyCanvas::MulDiv255Round(const COLORBYTE a, const COLORBYTE b)
+inline unsigned MyCanvas::MulDiv255Round(uint8_t a, uint8_t b)
 {
   unsigned prod = a * b * 65793;
   prod += (1 << 23);

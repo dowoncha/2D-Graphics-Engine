@@ -1,33 +1,30 @@
-//Copyright 2015 Dowon Cha
+/**
+ * Copyright 2015 Dowon Cha
+ * This template class is a 3x3 matrix. Encapsulates an array of size 9
+ * Array holds the matrix linearly from row to column
+ * Matrix is always default initialized to the identity matrix
+ */
 
 #pragma once
 
-#include "GPoint.h"
 #include <assert.h>
 #include <array>
+#include "GPoint.h"
 
 template<typename T>
 class GMatrix
 {
 private:
-  std::array<T, 9> Matrix;
+  std::array<T, 9> Matrix{{T(1.0), T(0.0), T(0.0),
+                           T(0.0), T(1.0), T(0.0),
+                           T(0.0), T(0.0), T(1.0)
+	                 }};
 public:
-  GMatrix() 
-  {
-    Matrix = {T(1.0), T(0.0), T(0.0),
-              T(0.0), T(1.0), T(0.0),
-              T(0.0), T(0.0), T(1.0)
-             };
-  };
+  GMatrix() {};
 
-  GMatrix(const T in[], int count)  //Fills in top two rows
+  GMatrix(const T in[], int count)
   {
     assert(count <= 9);
-
-    Matrix = { T(1.0), T(0.0), T(0.0),
-               T(0.0), T(1.0), T(0.0),
-               T(0.0), T(0.0), T(1.0)
-              };
 
     for (int i = 0; i < count; ++i) {
       Matrix[i] = in[i];
@@ -103,54 +100,40 @@ public:
     x = NewX;
     y = NewY;
   }
-
-  GMatrix<T> operator*(const GMatrix<T>& InMat) const
+  
+  /* Multiply the input matrix by this matrix and return a new one*/
+  GMatrix<T> operator*(const GMatrix<T>& In) const
   {
     std::array<T, 9> ConcatMat;
-    std::array<T, 6> RowCol;
 
     int counter = 0;
     for (int i = 0; i < 9; i += 3)
     {
-      RowCol[0] = Matrix[i];
-      RowCol[1] = Matrix[i + 1];
-      RowCol[2] = Matrix[i + 2];
       for (int j = 0; j < 3; ++j, ++counter)
       {
-        RowCol[3] = InMat.Matrix[j];
-        RowCol[4] = InMat.Matrix[j + 3];
-        RowCol[5] = InMat.Matrix[j + 6];
-
-        ConcatMat[counter] = RowCol[0] * RowCol[3] + RowCol[1] * RowCol[4] + RowCol[2] * RowCol[5];
+        ConcatMat[counter] = Matrix[i] * In.Matrix[j] + Matrix[i+1] * In.Matrix[j+3] + Matrix[i+2] * In.Matrix[j+6];
       }
     }
 
     return GMatrix<T>(ConcatMat);
   }
-
-  GMatrix<T>& concat(const GMatrix<T>& InMat)  //Concat's two matrices together. Will modify current, matrix returns *this
+  
+  //Concat's two matrices together. Will modify current, matrix returns *this
+  GMatrix<T>& concat(const GMatrix<T>& In)  
   {
-    if (this == &InMat)
+    if (this == &In)
     {
       return *this;
     }
 
     std::array<T, 9> ConcatMat;
-    std::array<T, 6> RowCol;
 
     int counter = 0;
     for (int i = 0; i < 9; i += 3)
     {
-      RowCol[0] = Matrix[i];
-      RowCol[1] = Matrix[i + 1];
-      RowCol[2] = Matrix[i + 2];
       for (int j = 0; j < 3; ++j, ++counter)
-      {
-        RowCol[3] = InMat.Matrix[j];
-        RowCol[4] = InMat.Matrix[j + 3];
-        RowCol[5] = InMat.Matrix[j + 6];
-
-        ConcatMat[counter] = RowCol[0] * RowCol[3] + RowCol[1] * RowCol[4] + RowCol[2] * RowCol[5];
+      {	
+	ConcatMat[counter] = Matrix[i] * In.Matrix[j] + Matrix[i + 1] * In.Matrix[j+3] + Matrix[i+2] * In.Matrix[j+6];
       }
     }
 

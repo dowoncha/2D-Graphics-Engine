@@ -30,7 +30,7 @@ bool GEdge::operator<(const GEdge& c) const
 bool GEdge::pinTopAndBot(int Height)
 {
   //Error edge segment is entirely out of bitmap just ignore
-  if (nBottom < 0 || nTop >= Height) {
+  if (nBottom < 0 || nTop >= Height || !std::isfinite(fSlope)) {
     return false;
   }
 
@@ -45,11 +45,6 @@ bool GEdge::pinTopAndBot(int Height)
   // If the bottom of the point is below the bitmap just set bottom of line to bitmap height
   if (nBottom > Height) {
     nBottom = Height;
-  }
- 
-  // Delete all edges that are horizontal AKA infinite slope
-  if (std::isinf(fSlope)) {
-    return false;
   }
 
   return true;

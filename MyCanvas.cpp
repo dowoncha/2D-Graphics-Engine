@@ -29,17 +29,30 @@ void MyCanvas::clear(const GColor& color)
   GPixel* DstPixels = Bitmap.pixels();            //Get the start of the bitmap Pixels array  
   GPixel pColor = Utility::ColorToPixel(color);   //Convert input color into a pixel
 
-  int length = Bitmap.height() * Bitmap.width();  //Length of bitmap array
-
-  for (int i = 0; i < length; ++i)
+  for (int y = 0; y < Bitmap.fHeight; ++y)
   {
-    DstPixels[i] = pColor;
+    for (int x = 0; x < Bitmap.fWidth; ++x)
+    {
+      DstPixels[x] = pColor;
+    }
+    
+    DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes);
   }
+  //  int length = Bitmap.height() * Bitmap.width();  //Length of bitmap array
+
+  //for (int i = 0; i < length; ++i)
+  // {
+  //  DstPixels[i] = pColor;
+  //}
 }
 
 void MyCanvas::fillRect(const GRect& rect, const GColor& color)
 {
-  assert(!rect.isEmpty());
+  if (rect.isEmpty()) 
+  {
+    printf("Error: FillRect input rect is empty\n");
+    return;
+  }
 
   GShader* shader = GShader::FromColor(color);
   shadeRect(rect, shader);
@@ -48,7 +61,11 @@ void MyCanvas::fillRect(const GRect& rect, const GColor& color)
 
 void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 {
-  assert(!dst.isEmpty());
+  if (dst.isEmpty())
+  {
+    printf("Error: FillBitmapRect dst rect is empty\n");
+    return;
+  }
 
   /* Get the matrix of the conversion from src to dst rect
    * Use the rect to rect matrix to create bitmap shader */
@@ -64,7 +81,11 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 
 void MyCanvas::fillConvexPolygon(const GPoint Points[], int count, const GColor& color)
 {
-  assert(count > 2);
+  if (count < 3)
+  {
+    printf("Error: FillConvexPolygon needs at least 3 points to draw a polygon\n");
+    return;
+  }
   
   GShader* shader = GShader::FromColor(color);  //Make the shader for one color
   shadeConvexPolygon(Points, count, shader);
@@ -73,6 +94,13 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], int count, const GColor&
 
 void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 {
+  assert(shader != nullptr);
+  if (rect.isEmpty())
+  {
+    printf("Error: ShadeRect rectangle is empty\n");
+    return;
+  }
+
   /* Convert the rectangle into points, then CTM the resulting points */
   auto Points = Utility::RectToPoints(rect);  
   CTMPoints(Points);  
@@ -95,17 +123,34 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
 
 void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* shader)
 {
+  assert(shader != nullptr);
+  if (count < 3)
+  {
+    printf("Error: ShadeConvexPolygon needs at least 3 points to draw a polygon\n");
+    return;
+  }
+
   std::vector<GPoint> Points(points, points + count);
 
   CTMPoints(Points);	
   auto Edges = pointsToEdges(Points);
+
+  for (auto Edge: Edges)
+  {
+    printf("Edges Top: %d, Bottom: %d, Slope: %f\n", Edge.top(), Edge.bottom(), Edge.slope());
+  }
 
   shadeDevicePolygon(Edges, shader);
 }
 
 void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const Stroke& stroke, GShader* shader)
 {
-  assert(n > 1);
+  assert(shader != nullptr);
+  if (n < 2)
+  {
+    printf("Error: StrokePolygon needs at least 2 points to stroke a line\n");
+    return;
+  }
 
   std::vector<GQuad> Shells;
 
@@ -129,6 +174,13 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
 
 void MyCanvas::shadeDeviceRect(const GIRect& rect, GShader* shader)
 {  
+  assert(shader != nullptr);
+  if (rect.isEmpty())
+  {
+    printf("Error: ShadeDeviceRect rect is empty can't draw\n");
+    return;
+  }
+
   // Get dst bitmap address and offset to the rect top
   GPixel* DstPixels = (GPixel*)((char*)Bitmap.pixels() + Bitmap.fRowBytes * rect.top());
   
@@ -153,7 +205,13 @@ void MyCanvas::shadeDeviceRect(const GIRect& rect, GShader* shader)
 
 void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
 {
-  assert(Edges.size() > 1);
+  assert(shader != nullptr);
+  if (Edges.size() < 2)
+  {
+    printf("Error: ShadeDevicePolygon needs at least 2 edges to draw\n");
+    return;
+  }
+
 
   // Sort the edges from top to bottom, left to right
   std::sort(Edges.begin(), Edges.end());
@@ -190,12 +248,12 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
     RightEdge.moveCurrentX(1.0f);
 
     // Check left and right edge for y has passed bottom, if we have edges left then set the next edge
-    if (y >= LeftEdge.bottom() && EdgeCounter < Edges.size())
+    if (y > LeftEdge.bottom() && EdgeCounter < Edges.size())
     {
       LeftEdge = Edges[EdgeCounter];
       ++EdgeCounter;
     }
-    if (y >= RightEdge.bottom() && EdgeCounter < Edges.size())
+    if (y > RightEdge.bottom() && EdgeCounter < Edges.size())
     {
       RightEdge = Edges[EdgeCounter];
       ++EdgeCounter;
@@ -205,7 +263,7 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
   }
 }
 
-GPixel MyCanvas::blend(const GPixel src, const GPixel dst)
+GPixel MyCanvas::blend(GPixel src, GPixel dst)
 {
   //If src alpha is 255 then just return the src
   if (GETA(src) == 0xFF) {
@@ -217,19 +275,19 @@ GPixel MyCanvas::blend(const GPixel src, const GPixel dst)
   }
 
   //Get the blend alpha value from 255 - Source_Alpha
-  COLORBYTE src_a_blend = 0xFF - GETA(src);
+  uint8_t src_a_blend = 0xFF - GETA(src);
 
   /** Using blend formula for each pixel color ARGB
    *  We first get the value from src, and add it to the result of
    *  multiplying a_blend and the color of dest.
-   * */
-  COLORBYTE alpha = GETA(src) + MulDiv255Round(src_a_blend, GETA(dst));
-  COLORBYTE red = GETR(src) + MulDiv255Round(src_a_blend, GETR(dst));
-  red = Utility::clamp((COLORBYTE)0, red, alpha);
-  COLORBYTE green = GETG(src) + MulDiv255Round(src_a_blend, GETG(dst));
-  green = Utility::clamp((COLORBYTE)0, green, alpha);
-  COLORBYTE blue = GETB(src) + MulDiv255Round(src_a_blend, GETB(dst));
-  blue = Utility::clamp((COLORBYTE)0, blue, alpha);
+   */
+  uint8_t alpha = GETA(src) + MulDiv255Round(src_a_blend, GETA(dst));
+  uint8_t red = GETR(src) + MulDiv255Round(src_a_blend, GETR(dst));
+  red = Utility::clamp((uint8_t)0, red, alpha);
+  uint8_t green = GETG(src) + MulDiv255Round(src_a_blend, GETG(dst));
+  green = Utility::clamp((uint8_t)0, green, alpha);
+  uint8_t blue = GETB(src) + MulDiv255Round(src_a_blend, GETB(dst));
+  blue = Utility::clamp((uint8_t)0, blue, alpha);
 
   return GPixel_PackARGB(alpha, red, green, blue);
 }
@@ -279,7 +337,7 @@ std::vector<GEdge> MyCanvas::pointsToEdges(std::vector<GPoint>& Points) const
 {
   SortPointsForConvex(Points);          //Sort the points into an order we can make edges with
   auto Edges = MakeConvexEdges(Points); //Make edges out of the sorted points
-  ClipEdges(Edges);			                //Clip the edges from the dst bitmap
+  ClipEdges(Edges);                     //Clip the edges from the dst bitmap
   return Edges;
 }
 
