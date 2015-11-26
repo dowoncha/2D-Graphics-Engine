@@ -10,8 +10,8 @@ MyCanvas::MyCanvas(const GBitmap& bitmap):
 	BmpRect(GIRect::MakeWH(bitmap.width(), bitmap.height())),
 	CTM()
 {
-			/* Push the identity matrix onto the matrix stack */
-		MatrixStack.push(CTM);
+  /* Push the identity matrix onto the matrix stack */
+  MatrixStack.push(CTM);
 }
 
 MyCanvas::~MyCanvas() {	}
@@ -19,11 +19,12 @@ MyCanvas::~MyCanvas() {	}
 // This function will create my implementation of a Canvas and return it out.
 GCanvas* GCanvas::Create(const GBitmap& bitmap)
 {
-	//If the bitmap width, height are invalid, pixel pointer is null, or the rowbytes size does not match then return NULL
-	if (bitmap.width() < 0 || bitmap.height() < 0 || bitmap.pixels() == NULL || bitmap.rowBytes() < (bitmap.width() * sizeof(GPixel)))
-		return NULL;
-
-	return new MyCanvas(bitmap);
+  //If the bitmap width, height are invalid, pixel pointer is null, or the rowbytes size does not match then return NULL
+  if (bitmap.width() < 0 || bitmap.height() < 0 || bitmap.pixels() == NULL || bitmap.rowBytes() < (bitmap.width() * sizeof(GPixel))) {
+    return NULL;
+  }
+  
+  return new MyCanvas(bitmap);
 }
 
 GPixel MyCanvas::blend(const GPixel src, const GPixel dst)
@@ -73,39 +74,39 @@ void MyCanvas::clear(const GColor& color)
   GPixel pColor = Utility::ColorToPixel(color);     //Convert input color into a pixel
 
   for (int y = 0; y < Bitmap.height(); ++y)
+  {
+    for (int x = 0; x < Bitmap.width(); ++x)
     {
-      for (int x = 0; x < Bitmap.width(); ++x)
-			{
-				DstPixels[x] = pColor;
-			}
-
-      DstPixels = (GPixel*) ((char*)DstPixels + Bitmap.rowBytes());
+      DstPixels[x] = pColor;
     }
+
+    DstPixels = (GPixel*) ((char*)DstPixels + Bitmap.rowBytes());
+  }
 }
 
 void MyCanvas::fillRect(const GRect& rect, const GColor& color)
 {
-	assert(!rect.isEmpty());
+  assert(!rect.isEmpty());
 
-	//Convert the color into a shader
-	GShader* shader = GShader::FromColor(color);
-	//Draw the rect
-	shadeRect(rect, shader);
+  //Convert the color into a shader
+  GShader* shader = GShader::FromColor(color);
+  //Draw the rect
+  shadeRect(rect, shader);
 }
 
 void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
 {
-	assert(!dst.isEmpty());
+  assert(!dst.isEmpty());
 
-	// Get the matrix of the conversion from src to dst rect
-	auto LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
+  // Get the matrix of the conversion from src to dst rect
+  auto LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
 
-	float localArr[6];
-	LocalMatrix.GetTwoRows(localArr);
+  float localArr[6];
+  LocalMatrix.GetTwoRows(localArr);
   //Create the shader for a bitmap
-	GShader* shader = GShader::FromBitmap(src, localArr);
-	//Shade the rectangle with the shader from the bitmap
-	shadeRect(dst, shader);
+  GShader* shader = GShader::FromBitmap(src, localArr);
+  //Shade the rectangle with the shader from the bitmap
+  shadeRect(dst, shader);
 }
 
 void MyCanvas::fillConvexPolygon(const GPoint Points[], const int count, const GColor& color)
@@ -127,7 +128,6 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
   if ( !CTM.preservesRect())  
   {
     auto Edges = pointsToEdges(Points);
-
     shadeDevicePolygon(Edges, shader);
     return;
   }
@@ -170,8 +170,7 @@ void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* sha
 {
 	std::vector<GPoint> Points(points, points + count);
 
-	CTMPoints(Points);	//Multiply the Points by the CTM
-	
+	CTMPoints(Points);	//Multiply the Points by the CTM      
 	auto Edges = pointsToEdges(Points);
 
 	shadeDevicePolygon(Edges, shader);
@@ -254,36 +253,37 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
     shadeDevicePolygon(Edges, shader);
   }
 }
+
 /************************************************************************/
 //Current Transformation Functions
 
 void MyCanvas::save()
 {
-	MatrixStack.push(CTM);	//Push a copy of the CTM onto the stack
+  MatrixStack.push(CTM);	//Push a copy of the CTM onto the stack
 }
 
 void MyCanvas::restore()
 {
-	if (!MatrixStack.empty())		//Check to make sure stack is not empty
-	{
-		CTM = MatrixStack.top();
-		MatrixStack.pop();				//Remove the CTM
-	}
+  if (!MatrixStack.empty())		//Check to make sure stack is not empty
+  {
+    CTM = MatrixStack.top();
+    MatrixStack.pop();				//Remove the CTM
+  }
 }
 
 void MyCanvas::concat(const float matrix[6])
 {
-	/* Make a new matrix using the input matrix values*/
-	GMatrix<float> ConcatMat(matrix, 6);
-	CTM.concat(ConcatMat);				//Concat the input matrix onto the CTM
+  /* Make a new matrix using the input matrix values*/
+  GMatrix<float> ConcatMat(matrix, 6);
+  CTM.concat(ConcatMat);	       //Concat the input matrix onto the CTM
 }
 
 void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
 {
-	/* Convert all points by the CTM*/
-	for (auto &Point: Points) {
-		CTM.convertPoint(Point);
-	}
+  /* Convert all points by the CTM*/
+  for (auto &Point: Points) {
+    CTM.convertPoint(Point);
+  }
 }
 
 /************************************************************************/

@@ -4,28 +4,30 @@
 
 GEdge::GEdge(const GPoint& p1, const GPoint& p2)
 {
-	/* Whichever has the higher y value becomes the top point */
-	const GPoint& TopPoint = (p1.y() < p2.y()) ? p1 : p2;
-	const GPoint& BotPoint = (p1.y() < p2.y()) ? p2 : p1;
+  /* Whichever has the higher y value becomes the top point */
+  const GPoint& TopPoint = (p1.y() < p2.y()) ? p1 : p2;  
+  const GPoint& BotPoint = (p1.y() < p2.y()) ? p2 : p1;
 
-	/* Get the slope from unmodified values */
-	fSlope = (TopPoint.x() - BotPoint.x()) / (TopPoint.y() - BotPoint.y());
+  /* Get the slope from unmodified values */
+  fSlope = (TopPoint.x() - BotPoint.x()) / (TopPoint.y() - BotPoint.y());
 
-	/* Find the rounded top and bottom values */
-	nTop = Utility::round(TopPoint.y());
-	nBottom = Utility::round(BotPoint.y());
+  /* Find the rounded top and bottom values */
+  nTop = Utility::round(TopPoint.y());
+  nBottom = Utility::round(BotPoint.y());
 
-	/* Find the currentX value */
-	fCurrentX = TopPoint.x() + fSlope * (nTop + .5 - TopPoint.y()) ;
+  /* Find the currentX value */
+  fCurrentX = TopPoint.x() + fSlope * (nTop + .5 - TopPoint.y()) ;
 }
 
 bool GEdge::operator<(const GEdge& c) const
 {
-	int rX = Utility::round(fCurrentX);
-	int cRX = Utility::round(c.fCurrentX);
-	int rXS = Utility::round(fCurrentX + fSlope);
-	int cRXS = Utility::round(c.fCurrentX + c.fSlope);
-	return std::tie(nTop, rX, rXS, fSlope) < std::tie(c.nTop, cRX, cRXS, c.fSlope);
+  int rX = Utility::round(fCurrentX);
+  int rXS = Utility::round(fCurrentX + fSlope);
+
+  int cRX = Utility::round(c.fCurrentX);
+  int cRXS = Utility::round(c.fCurrentX + c.fSlope);
+ 
+  return std::tie(nTop, rX, rXS, fSlope) < std::tie(c.nTop, cRX, cRXS, c.fSlope);
 }
 
 bool GEdge::PinTopAndBot(int Height)
