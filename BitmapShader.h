@@ -19,4 +19,5 @@ public:
   ~BitmapShader();
   bool setContext(const float ctm[6]) override;
   void shadeRow(int x, int y, int count, GPixel row[]) override;
+  GPixel bilerp(float srcX, float srcY);
 };

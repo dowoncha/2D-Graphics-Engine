@@ -24,8 +24,7 @@ inline T clamp(T min, T value, T max)
   return std::max(min, std::min(value, max));
 }
 
-template<typename T>
-inline T floor_clamp(T value) 
+inline float floor_clamp(float value) 
 {
   return value - std::floor(value);
 }
@@ -38,6 +37,12 @@ inline T lerp(T v0, T v1, T t) {
 inline int round(float a)
 {
   return (int)std::floor(a + .5);
+}
+
+inline uint8_t floatToByte(float i)
+{
+  int isx = (int)(i * 255.99999f);
+  return (uint8_t)(isx & 0xff);
 }
 
 GPoint unitVector(const GPoint& A, const GPoint& B);

@@ -151,14 +151,15 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
 
   std::vector<GQuad> Shells;
 
-  //Calculate every shell and store it into the vector
-  for (int i = 0; i < n - 1; ++i) {
-    Shells.emplace_back(GQuad{Points[i], Points[i + 1], stroke.fWidth});
+  for (int i = 0; i < n - 1; ++i)
+  {
+    Shells.emplace_back(GQuad::Make(Points[i], Points[i + 1], stroke.fWidth));
   }
 
   //If the polygon is closed then we connect the last and first points
-  if (isClosed) {
-    Shells.emplace_back(GQuad{Points[n-1], Points[0], stroke.fWidth});
+  if (isClosed) 
+  {
+    Shells.emplace_back(GQuad::Make(Points[n-1], Points[0], stroke.fWidth));
   }
 
   //Draw all of the shells

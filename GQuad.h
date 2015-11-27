@@ -16,7 +16,7 @@ public:
   GPoint B;
   GPoint ABT;
 
-  static GQuad MakeShell(const GPoint& A, const GPoint& B, float width)
+  static GQuad Make(const GPoint& A, const GPoint& B, float width)
   {
     GPoint AB = Utility::unitVector(A, B);
     float rad = width * 0.5f;
