@@ -1,6 +1,9 @@
 /**
- * Copyright 2015 Dowon Cha
+ * \file GQuad.h 
  *
+ * \author Dowon Cha
+ *
+ *  Copyright 2015
  *  This class will be used to hold 4 points and maybe do some manipulation wthin.
  *  Call the draw function to draw the polygon. 
  */
@@ -18,12 +21,15 @@ public:
 
   static GQuad Make(const GPoint& A, const GPoint& B, float width)
   {
+    // Make AB vector of length half the width. Then use AB vector to make AB perpendicular
     GPoint AB = Utility::unitVector(A, B);
     float rad = width / 2;
-    GPoint ABT = GPoint::Make(-AB.fY * rad, AB.fX * rad);
-
+    AB.fX *= rad;
+    AB.fY *= rad;
+    GPoint ABT = GPoint::Make(-AB.fY, AB.fX);
+    
     GQuad Shell = {A, B, ABT};
-
+    
     return Shell;
   }
 

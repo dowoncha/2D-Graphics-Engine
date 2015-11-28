@@ -1,4 +1,9 @@
-//Copyright 2015 Dowon Cha
+/**
+ *  \file MyCanvas.cpp
+ *  \author Dowon Cha
+ *
+ *  Copyright 2015
+ */
 
 #include "MyCanvas.h"
 
@@ -13,7 +18,6 @@ MyCanvas::MyCanvas(const GBitmap& bitmap):
 
 MyCanvas::~MyCanvas() {	}
 
-// This function will create my implementation of a Canvas and return it out.
 GCanvas* GCanvas::Create(const GBitmap& bitmap)
 {
   //If the bitmap width, height are invalid, pixel pointer is null, or the rowbytes size does not match then return NULL
@@ -38,12 +42,6 @@ void MyCanvas::clear(const GColor& color)
     
     DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes);
   }
-  //  int length = Bitmap.height() * Bitmap.width();  //Length of bitmap array
-
-  //for (int i = 0; i < length; ++i)
-  // {
-  //  DstPixels[i] = pColor;
-  //}
 }
 
 void MyCanvas::fillRect(const GRect& rect, const GColor& color)
@@ -72,14 +70,13 @@ void MyCanvas::fillBitmapRect(const GBitmap& src, const GRect& dst)
   auto LocalMatrix = Utility::RectToRect(GRect::MakeWH(src.width(), src.height()), dst);
   float localArr[6];
   LocalMatrix.GetTwoRows(localArr);
+  
   GShader* shader = GShader::FromBitmap(src, localArr);
-
   shadeRect(dst, shader);
-
   delete shader;
 }
 
-void MyCanvas::fillConvexPolygon(const GPoint Points[], int count, const GColor& color)
+void MyCanvas::fillConvexPolygon(const GPoint points[], int count, const GColor& color)
 {
   if (count < 3)
   {
@@ -88,7 +85,7 @@ void MyCanvas::fillConvexPolygon(const GPoint Points[], int count, const GColor&
   }
   
   GShader* shader = GShader::FromColor(color);  //Make the shader for one color
-  shadeConvexPolygon(Points, count, shader);
+  shadeConvexPolygon(points, count, shader);
   delete shader;
 }
 
@@ -105,20 +102,20 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
   auto Points = Utility::RectToPoints(rect);  
   CTMPoints(Points);  
  
-  //  if ( !CTM.preservesRect())  //If the CTM does not preserve a rectangle, draw a polygon
-	// {
+  if ( !CTM.preservesRect())  //If the CTM does not preserve a rectangle, draw a polygon
+	{
     auto Edges = pointsToEdges(Points);
     shadeDevicePolygon(Edges, shader);
     return;
-    //  }
-    /*
+  }
+  
   //Convert the CTM'd points back into a rect since we know it preserves it
   GIRect ConvertedRect = Utility::PointsToRect(Points).round();
 
   // Make sure rect is not an empty one and clip the edges from the bitmap with intersect
   if (ConvertedRect.isEmpty() || !ConvertedRect.intersect(BmpRect)) { return; }
 
-  shadeDeviceRect(ConvertedRect, shader);*/
+  shadeDeviceRect(ConvertedRect, shader);
 }
 
 void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* shader)
@@ -138,7 +135,7 @@ void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* sha
   shadeDevicePolygon(Edges, shader);
 }
 
-void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const Stroke& stroke, GShader* shader)
+void MyCanvas::strokePolygon(const GPoint points[], int n, bool isClosed, const Stroke& stroke, GShader* shader)
 {
   assert(shader != nullptr);
   if (n < 2)
@@ -146,56 +143,57 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
     printf("Error: StrokePolygon needs at least 2 points to stroke a line\n");
     return;
   }
-
-  using namespace Utility;
-
+  
   std::vector<GQuad> Shells;
-
+  
   for (int i = 0; i < n - 1; ++i)
   {
-    const GPoint& A = Points[i];
-    const GPoint& B = Points[i + 1];
+    const GPoint& A = points[i];
+    const GPoint& B = points[i + 1];
+    
     Shells.emplace_back(GQuad::Make(A, B, stroke.fWidth));
-    //    printf("Points A:%f %f, B: %f %f\n", A.fX, A.fY, B.fX, B.fY);
     //printf("Quad: A:%f %f, B:%f %f, ABT:%f %f\n", Shells.back().A.fX, Shells.back().A.fY, Shells.back().B.fX, Shells.back().B.fY, Shells.back().ABT.fX, Shells.back().ABT.fY);
   }
 
   //If the polygon is closed then we connect the last and first points
-  if (isClosed) 
-  {
-    Shells.emplace_back(GQuad::Make(Points[n-1], Points[0], stroke.fWidth));
+  //Otherwise if stroke.fAddCap is set then we set caps to the first and last shells.
+  if (isClosed) {
+    Shells.emplace_back(GQuad::Make(points[0], points[n-1], stroke.fWidth));
+  }
+  else if (stroke.fAddCap) {    
+    
+    GPoint ABT = Shells.front().ABT;
+    
+    Shells.front().A.fX -= ABT.fY;
+    Shells.front().A.fY += ABT.fX;
+    
+    ABT = Shells.back().ABT;
+    
+    Shells.back().B.fX += ABT.fY;
+    Shells.back().B.fY -= ABT.fX;
   }
 
-  if (stroke.fAddCap)
-  {
-    GQuad& first = Shells.front();
-    GPoint AB = Utility::unitVector(first.A, first.B);
-    first.A = first.A + AB;
-    first.B = first.B - AB;
-   
-    if (Shells.size() > 1)
-    {
-      GQuad& last = Shells.back();
-      AB = Utility::unitVector(last.A, last.B);
-      last.A = last.A + AB;
-      last.B = last.B - AB;
-    }
-  }
-
-  //Draw all of the shells
+  //Draw the shells
   for (auto Shell : Shells)
   {
-    auto Points = Shell.getPoints();
-    CTMPoints(Points);
-    auto Edges = pointsToEdges(Points);
+    auto vPoints = Shell.getPoints();
+    CTMPoints(vPoints);
+    auto Edges = pointsToEdges(vPoints);
 
     shadeDevicePolygon(Edges, shader);
   }
+}
 
-  /*
-  //No need to do joint work if only one line
-  if (Shells.size() == 1) return;
-
+void MyCanvas::drawJoints(std::vector<GQuad> Shells, const Stroke& stroke)
+{
+  using namespace Utility;
+  
+  if (Shells.size() < 2) 
+  {
+    printf("Need at least 2 strokes to joint\n");
+    return;
+  }
+  
   for (int i = 0; i < Shells.size(); ++i)
   {
     std::vector<GPoint> JointPoly;
@@ -234,8 +232,7 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
 
     CTMPoints(JointPoly);
     auto Edges = pointsToEdges(JointPoly);
-    shadeDevicePolygon(Edges, shader);
-    }*/
+    }
 }
 
 /***********************************Device Drawing Functions *****************************************/
@@ -264,7 +261,6 @@ void MyCanvas::shadeDeviceRect(const GIRect& rect, GShader* shader)
   {
     shader->shadeRow(rect.left(), y, count, row);
     blendRow(DstPixels, rect.left(), row, count);
-
     DstPixels = (GPixel*)((char*)DstPixels + Bitmap.fRowBytes);
   }
 
@@ -428,17 +424,17 @@ void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
 {
   /* Sort Points by y and then x if they are equal */
   std::sort(Points.begin(), Points.end(), [](const GPoint& a, const GPoint& b) -> bool{
-    return ( std::fabs(a.y() - b.y() ) < .0001) ? a.x() > b.x() : a.y() < b.y();
+    return ( std::fabs(a.fY - b.fY ) < .0001) ? a.fX > b.fX : a.fY < b.fY;
   });
 
   std::queue<GPoint> RightPoints;  //Hold all points right of the pivot
   std::stack<GPoint> LeftPoints;   //Hold all points left of the pivot
 
   /* Start from 2nd value because top is the pivot */
-  for (auto Point = Points.begin() + 1; Point != Points.end() - 1; ++Point)
+  for (auto Point = ++Points.begin(); Point != --Points.end(); ++Point)
   {
     /* If the x value of the Point is greater than or equal to the top point x*/
-    if ( Point->x() >= Points.front().x()) {
+    if ( Point->fX >= Points.front().fX) {
       RightPoints.push(*Point);  
     }
     else {
@@ -450,7 +446,7 @@ void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
   const auto RightSize = RightPoints.size();
 
   /* Points: Order Diagram - TopPivot, RightPoints - RightPoints.end() - 1, BottomPivot, LeftPoints - LeftPoints.end() */
-  for (auto Point = Points.begin() + 1; !RightPoints.empty(); ++Point)
+  for (auto Point = ++Points.begin(); !RightPoints.empty(); ++Point)
   {
     *Point = RightPoints.front();
     RightPoints.pop();
@@ -460,7 +456,7 @@ void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
   Points[RightSize + 1] = Points.back();
 
   /* If the LeftPoints are not empty store them*/
-  for (auto i = RightSize + 2; !LeftPoints.empty(); ++i)
+  for (int i = RightSize + 2; !LeftPoints.empty(); ++i)
   {
     Points[i] = LeftPoints.top();  //Copy over from left stack
     LeftPoints.pop();									     

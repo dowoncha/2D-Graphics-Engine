@@ -1,7 +1,10 @@
-/**
- * Copyright 2015 Dowon Cha
- * This is my implementation of a canvas. It is a subclass of the GCanvas class.
- * */
+/*!
+ * \file MyCanvas.h
+ *
+ * \author Dowon Cha
+ * \date 2015
+ *
+ */
 
 #pragma once
 
@@ -34,25 +37,60 @@
 #define GETG(a)    		  GPixel_GetG(a)
 #define GETB(a)    		  GPixel_GetB(a)
 
+/**
+ * \class MyCanvas
+ * \brief MyCanvas class
+ * 
+ * A detailed description
+ */
 class MyCanvas : public GCanvas
 {
 public:
+  /**
+   *  \brief A Constructor
+   *  \param bitmap destination to call draw functions on
+   */
   MyCanvas(const GBitmap& bitmap);
+  
+  /**
+   *  \brief A destructor
+   */
   ~MyCanvas();
 
   class SizeViolation {};
-
-  /* Fill the entire canvas with the specified color */
+  
+  /**
+   *  \brief Fill the entire canvas with the specified color
+   *  
+   *  \param [in] color to clear the bitmap with.
+   *    
+   *  \details SrcOver porter duff mode
+   */
   void clear(const GColor& color) override;
   
-  /* Fill a rect with a color or a bitmap */
-  void fillRect(const GRect&, const GColor&) override;
+  /**
+   *  \brief Fill a rect with a color or a bitmap
+   *  
+   *  \param[in] rect The rectangle that is filled in on the canvas bitmap
+   *  \param[in] color Fill \a rect with this color.
+   */
+  void fillRect(const GRect& rect, const GColor& color) override;
   
-  /* Fills the input rectangle from input bitmap onto destination bitmap */
+  /**
+   *  \brief Fills the input rectangle from input bitmap onto destination bitmap
+   *  
+   *  \param[in] src 
+   *  \param[in] dst
+   */
   void fillBitmapRect(const GBitmap& src, const GRect& dst) override;
   
-  /* Fills a convex polygon with the input color */
-  void fillConvexPolygon(const GPoint Points[], int count, const GColor& color) override;
+  /**
+   *  \brief Fills a convex polygon with the input color
+   *  \param[in] Points
+   *  \param[in] count
+   *  \param[in] color
+   */
+  void fillConvexPolygon(const GPoint points[], int count, const GColor& color) override;
 
   /* Shade a rectangle */
   void shadeRect(const GRect& rect, GShader* shader) override;
@@ -63,6 +101,8 @@ public:
   /* Stroke the set of points. Adjacent points make up a line, uses miter or flat for joints*/
   void strokePolygon(const GPoint[], int n, bool isClosed, const Stroke&, GShader*) override;
 
+  void drawJoints(std::vector<GQuad> Shells, const Stroke& stroke);
+  
   /* Current Transformation Matrix functions*/
   void save() override;
   

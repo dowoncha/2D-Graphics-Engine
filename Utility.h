@@ -1,8 +1,13 @@
-/* 
- * Copyright 2015 Dowon Cha
+/**
+ * \file Utility.h
+ *
+ * \author Dowon Cha
+ * \date 2015
+ *
  * Set of helper functions to use in project. Contains various clamp functions
  * Along with polygon conversion functions
  */
+ 
 #pragma once
 
 #include <vector>
@@ -15,9 +20,22 @@
 #include "GMatrix.h"
 #include "GRect.h"
 
+/**
+ *  
+ */
 namespace Utility
 {
   
+/*!
+ * \brief Clamp a value between the min and max
+ *
+ * [detailed description]
+ *
+ * \param[in] min The minimum allowed value
+ * \param[in] value The value being clamped
+ * \param[in] max The maximum allowed value
+ * \return value or if outside min max it will be clamped
+ */
 template<typename T>
 inline T clamp(T min, T value, T max) 
 {
