@@ -6,7 +6,7 @@ namespace Utility
 GPoint unitVector(const GPoint& A, const GPoint& B)
 {
   GPoint AB = B - A;
-  float length = std::sqrt(AB.fX * AB.fX + AB.fY + AB.fY);
+  float length = std::sqrt(AB.fX * AB.fX + AB.fY * AB.fY);
   AB.fX /= length;
   AB.fY /= length;
 

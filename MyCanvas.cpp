@@ -105,20 +105,20 @@ void MyCanvas::shadeRect(const GRect& rect, GShader* shader)
   auto Points = Utility::RectToPoints(rect);  
   CTMPoints(Points);  
  
-  if ( !CTM.preservesRect())  //If the CTM does not preserve a rectangle, draw a polygon
-  {
+  //  if ( !CTM.preservesRect())  //If the CTM does not preserve a rectangle, draw a polygon
+	// {
     auto Edges = pointsToEdges(Points);
     shadeDevicePolygon(Edges, shader);
     return;
-  }
-
+    //  }
+    /*
   //Convert the CTM'd points back into a rect since we know it preserves it
   GIRect ConvertedRect = Utility::PointsToRect(Points).round();
 
   // Make sure rect is not an empty one and clip the edges from the bitmap with intersect
   if (ConvertedRect.isEmpty() || !ConvertedRect.intersect(BmpRect)) { return; }
 
-  shadeDeviceRect(ConvertedRect, shader);
+  shadeDeviceRect(ConvertedRect, shader);*/
 }
 
 void MyCanvas::shadeConvexPolygon(const GPoint points[], int count, GShader* shader)
@@ -153,13 +153,33 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
 
   for (int i = 0; i < n - 1; ++i)
   {
-    Shells.emplace_back(GQuad::Make(Points[i], Points[i + 1], stroke.fWidth));
+    const GPoint& A = Points[i];
+    const GPoint& B = Points[i + 1];
+    Shells.emplace_back(GQuad::Make(A, B, stroke.fWidth));
+    //    printf("Points A:%f %f, B: %f %f\n", A.fX, A.fY, B.fX, B.fY);
+    //printf("Quad: A:%f %f, B:%f %f, ABT:%f %f\n", Shells.back().A.fX, Shells.back().A.fY, Shells.back().B.fX, Shells.back().B.fY, Shells.back().ABT.fX, Shells.back().ABT.fY);
   }
 
   //If the polygon is closed then we connect the last and first points
   if (isClosed) 
   {
     Shells.emplace_back(GQuad::Make(Points[n-1], Points[0], stroke.fWidth));
+  }
+
+  if (stroke.fAddCap)
+  {
+    GQuad& first = Shells.front();
+    GPoint AB = Utility::unitVector(first.A, first.B);
+    first.A = first.A + AB;
+    first.B = first.B - AB;
+   
+    if (Shells.size() > 1)
+    {
+      GQuad& last = Shells.back();
+      AB = Utility::unitVector(last.A, last.B);
+      last.A = last.A + AB;
+      last.B = last.B - AB;
+    }
   }
 
   //Draw all of the shells
@@ -172,40 +192,50 @@ void MyCanvas::strokePolygon(const GPoint Points[], int n, bool isClosed, const 
     shadeDevicePolygon(Edges, shader);
   }
 
+  /*
   //No need to do joint work if only one line
   if (Shells.size() == 1) return;
 
   for (int i = 0; i < Shells.size(); ++i)
   {
     std::vector<GPoint> JointPoly;
-
-    const GPoint& joint = Shells[i].B;
-    const GPoint& BQ = Shells[i].ABT;
-    const GPoint& BR = Shells[i+1].ABT;
+    const GQuad& line1 = Shells[i];
+    const GQuad& line2 = Shells[i + 1];
+    const GPoint& joint = line1.B;
+    const GPoint& BQ = line1.ABT;
+    const GPoint& BR = line2.ABT;
     GPoint Q = joint + BQ;
     GPoint R = joint + BR;
     GPoint BP = BR + BQ;
 
-    GPoint U = Utility::unitVector(Shells[i].A, Shells[i].B);
-    U.fX = -U.fX;
-    U.fY = -U.fY;
-    GPoint V = Utility::unitVector(Shells[i+1].A, Shells[i+1].B);
+    GPoint U = Utility::unitVector(line1.B, line1.A);
+    GPoint V = Utility::unitVector(line2.A, line2.B);
     float UdotV = U.fX * V.fX + U.fY * V.fY;
     float h = std::sqrt(2.0f / (1 - UdotV));
-    float BPlength = stroke.fWidth / 2.0f * h;
 
-    BP.fX *= BPlength;
-    BP.fY *= BPlength;
+    if (h > stroke.fMiterLimit)
+    {
+      JointPoly.push_back(joint);
+      JointPoly.push_back(Q);
+      JointPoly.push_back(R);
+    }
+    else 
+    {
+      float BPlength = stroke.fWidth / 2.0f * h;
 
-    JointPoly.push_back(joint);
-    JointPoly.push_back(Q);
-    JointPoly.push_back(R);
-    JointPoly.push_back(joint + BP);
+      BP.fX *= BPlength;
+      BP.fY *= BPlength;
+
+      JointPoly.push_back(joint);
+      JointPoly.push_back(Q);
+      JointPoly.push_back(R);
+      JointPoly.push_back(joint + BP);
+    }
 
     CTMPoints(JointPoly);
     auto Edges = pointsToEdges(JointPoly);
     shadeDevicePolygon(Edges, shader);
-  }
+    }*/
 }
 
 /***********************************Device Drawing Functions *****************************************/
@@ -246,7 +276,7 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
   assert(shader != nullptr);
   if (Edges.size() < 2)
   {
-    printf("Error: ShadeDevicePolygon needs at least 2 edges to draw\n");
+    //printf("Error: ShadeDevicePolygon needs at least 2 edges to draw\n");
     return;
   }
 
@@ -269,7 +299,7 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
   for (int y = LeftEdge.top(); y < Edges.back().bottom(); ++y)
   {
     int startX = Utility::round(LeftEdge.currentX());
-    int count = (int)RightEdge.currentX() - (int)LeftEdge.currentX();
+    int count = (int)(RightEdge.currentX() - LeftEdge.currentX());
 
     count = Utility::clamp(1, count, BmpRect.width() - 1);
 
@@ -285,12 +315,12 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
     RightEdge.moveCurrentX(1.0f);
 
     // Check left and right edge for y has passed bottom, if we have edges left then set the next edge
-    if (y > LeftEdge.bottom() && EdgeCounter < Edges.size())
+    if (y >= LeftEdge.bottom() && EdgeCounter < Edges.size())
     {
       LeftEdge = Edges[EdgeCounter];
       ++EdgeCounter;
     }
-    if (y > RightEdge.bottom() && EdgeCounter < Edges.size())
+    if (y >= RightEdge.bottom() && EdgeCounter < Edges.size())
     {
       RightEdge = Edges[EdgeCounter];
       ++EdgeCounter;

@@ -19,7 +19,7 @@ public:
   static GQuad Make(const GPoint& A, const GPoint& B, float width)
   {
     GPoint AB = Utility::unitVector(A, B);
-    float rad = width * 0.5f;
+    float rad = width / 2;
     GPoint ABT = GPoint::Make(-AB.fY * rad, AB.fX * rad);
 
     GQuad Shell = {A, B, ABT};
