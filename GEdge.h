@@ -1,4 +1,5 @@
 /*
+ * \file GEdge.h
  * Copyright 2015 Dowon Cha
  * This class represents an edge. An edge is created from 2 points. 
  * Edge is represented by an integer top and bottom that has been rounded from the points
@@ -42,7 +43,7 @@ public:
   bool pinTopAndBot(int Height);
   bool operator< (const GEdge& c) const;
 
-  void printEdge() const
+  void print() const
   {
     printf("Edge Top: %d, Bottom: %d, Slope: %f, CurrentX: %f\n", nTop, nBottom, fSlope, fCurrentX);
   }

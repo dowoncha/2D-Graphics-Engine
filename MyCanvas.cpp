@@ -146,19 +146,17 @@ void MyCanvas::strokePolygon(const GPoint points[], int n, bool isClosed, const 
   
   std::vector<GQuad> Shells;
   
+  // Make a shell for each adjacent pair of points
   for (int i = 0; i < n - 1; ++i)
   {
-    const GPoint& A = points[i];
-    const GPoint& B = points[i + 1];
-    
-    Shells.emplace_back(GQuad::Make(A, B, stroke.fWidth));
-    //printf("Quad: A:%f %f, B:%f %f, ABT:%f %f\n", Shells.back().A.fX, Shells.back().A.fY, Shells.back().B.fX, Shells.back().B.fY, Shells.back().ABT.fX, Shells.back().ABT.fY);
+    Shells.emplace_back(GQuad::Make(points[i], points[i+1], stroke.fWidth));
+    //Shells.back().print();
   }
 
   //If the polygon is closed then we connect the last and first points
   //Otherwise if stroke.fAddCap is set then we set caps to the first and last shells.
   if (isClosed) {
-    Shells.emplace_back(GQuad::Make(points[0], points[n-1], stroke.fWidth));
+    Shells.emplace_back(GQuad::Make(points[n-1], points[0], stroke.fWidth));
   }
   else if (stroke.fAddCap) {    
     
@@ -172,7 +170,7 @@ void MyCanvas::strokePolygon(const GPoint points[], int n, bool isClosed, const 
     Shells.back().B.fX += ABT.fY;
     Shells.back().B.fY -= ABT.fX;
   }
-
+    
   //Draw the shells
   for (auto Shell : Shells)
   {
@@ -182,57 +180,62 @@ void MyCanvas::strokePolygon(const GPoint points[], int n, bool isClosed, const 
 
     shadeDevicePolygon(Edges, shader);
   }
+  
+  //Calculate the joint between each pair of shells and draw
+  for (int i = 0; i < Shells.size() - 1; ++i)
+  {
+    auto Joint = calculateJoint(Shells[i], Shells[i + 1], stroke);
+    
+    if (Joint.empty()) continue;
+    
+    CTMPoints(Joint);
+    auto Edges = pointsToEdges(Joint);
+    shadeDevicePolygon(Edges, shader);
+  }  
 }
 
-void MyCanvas::drawJoints(std::vector<GQuad> Shells, const Stroke& stroke)
-{
-  using namespace Utility;
-  
-  if (Shells.size() < 2) 
-  {
-    printf("Need at least 2 strokes to joint\n");
-    return;
-  }
-  
-  for (int i = 0; i < Shells.size(); ++i)
-  {
-    std::vector<GPoint> JointPoly;
-    const GQuad& line1 = Shells[i];
-    const GQuad& line2 = Shells[i + 1];
+std::vector<GPoint> MyCanvas::calculateJoint(const GQuad& line1, const GQuad& line2, const Stroke& stroke) const
+{   
+    printf("Calculating Joint\n");
+    line1.print();
+    line2.print();
+
+    if (line1.B.fX != line2.A.fX && line1.B.fY != line2.A.fY) 
+    {
+      printf("Line 1 B and Line 2 A is not the same pivot point\n");
+      return std::vector<GPoint>();
+    }
+    
+    using namespace Utility;
+    
+    std::vector<GPoint> Poly;
+
+    /* Calculate angle between lines to determine if we miter or bevel the joint*/
+    GPoint U = Utility::UnitVector(line1.B, line1.A);
+    GPoint V = Utility::UnitVector(line2.A, line2.B);
+    float UdotV = Utility::DotProduct(U, V);
+    float h = std::sqrt(2.0f / (1.0f - UdotV));
+
+    /* Both Joints share 3 common points, calculate and add to polygon vector*/
     const GPoint& joint = line1.B;
     const GPoint& BQ = line1.ABT;
     const GPoint& BR = line2.ABT;
-    GPoint Q = joint + BQ;
-    GPoint R = joint + BR;
-    GPoint BP = BR + BQ;
-
-    GPoint U = Utility::unitVector(line1.B, line1.A);
-    GPoint V = Utility::unitVector(line2.A, line2.B);
-    float UdotV = U.fX * V.fX + U.fY * V.fY;
-    float h = std::sqrt(2.0f / (1 - UdotV));
-
-    if (h > stroke.fMiterLimit)
+    
+    Poly.push_back(joint);
+    Poly.push_back(joint + BQ);
+    Poly.push_back(joint + BR);
+    
+    /* If angle between AB and BC is less than the miter limit then its a miter joint so we add P = B + BP*/
+    if ( h <= stroke.fMiterLimit) 
     {
-      JointPoly.push_back(joint);
-      JointPoly.push_back(Q);
-      JointPoly.push_back(R);
-    }
-    else 
-    {
+      GPoint BP = Utility::UnitVector(joint, BR + BQ);
       float BPlength = stroke.fWidth / 2.0f * h;
-
-      BP.fX *= BPlength;
-      BP.fY *= BPlength;
-
-      JointPoly.push_back(joint);
-      JointPoly.push_back(Q);
-      JointPoly.push_back(R);
-      JointPoly.push_back(joint + BP);
+      BP *= BPlength;
+      
+      Poly.push_back(joint + BP);
     }
-
-    CTMPoints(JointPoly);
-    auto Edges = pointsToEdges(JointPoly);
-    }
+    
+    return Poly;  
 }
 
 /***********************************Device Drawing Functions *****************************************/
@@ -405,18 +408,6 @@ std::vector<GEdge> MyCanvas::pointsToEdges(std::vector<GPoint>& Points)
 
   ClipEdges(Edges);                     //Clip the edges from the dst bitmap
 
-  /*  printf("Preclipped\n");
-    for (auto Edge: PreClip)
-    {
-      Edge.printEdge();
-    }
-
-    printf("Clipped\n");
-    for (auto Edge: Edges )
-    {
-      Edge.printEdge();
-    }
-  */
   return Edges;
 }
 

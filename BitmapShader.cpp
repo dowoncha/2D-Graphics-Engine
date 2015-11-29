@@ -12,7 +12,7 @@ BitmapShader::~BitmapShader()
 bool BitmapShader::setContext(const float ctm[6])
 {
   GMatrix<float> CTM(ctm, 6);
-  Inverse = CTM.concat(LocalMatrix).inverse();
+  Inverse = CTM.concat(LocalMatrix).twoRowInverse();
 
   return true;
 }

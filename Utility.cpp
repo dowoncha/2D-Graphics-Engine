@@ -3,7 +3,7 @@
 namespace Utility
 {
 
-GPoint unitVector(const GPoint& A, const GPoint& B)
+GPoint UnitVector(const GPoint& A, const GPoint& B)
 {
   GPoint AB = B - A;
   float length = std::sqrt(AB.fX * AB.fX + AB.fY * AB.fY);
@@ -50,7 +50,7 @@ GMatrix<float> RectToRect(const GRect& src, const GRect& dst)
 {
   // Make translation matrix of the source from the origin
   GMatrix<float> SrcTranslate;
-  SrcTranslate.setTranslation(-1 * src.left(), -1 * src.top());
+  SrcTranslate.setTranslation(-src.left(), -src.top());
 
   // Make scale matrix of dx, dy. Dst / Src
   GMatrix<float> Scale;

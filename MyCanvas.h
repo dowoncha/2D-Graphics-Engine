@@ -101,7 +101,7 @@ public:
   /* Stroke the set of points. Adjacent points make up a line, uses miter or flat for joints*/
   void strokePolygon(const GPoint[], int n, bool isClosed, const Stroke&, GShader*) override;
 
-  void drawJoints(std::vector<GQuad> Shells, const Stroke& stroke);
+  std::vector<GPoint> calculateJoint(const GQuad& line1, const GQuad& line2, const Stroke& stroke) const;
   
   /* Current Transformation Matrix functions*/
   void save() override;

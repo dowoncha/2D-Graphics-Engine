@@ -19,7 +19,7 @@ LinearShader::~LinearShader()
 bool LinearShader::setContext(const float ctm[6])
 {
   GMatrix<float> CTM(ctm, 6);
-  Inverse = CTM.concat(LocalMatrix).inverse();
+  Inverse = CTM.concat(LocalMatrix).twoRowInverse();
 
   return true;
 }
@@ -32,7 +32,8 @@ void LinearShader::shadeRow(int x, int y, int count, GPixel row[])
     GPoint Point = {i + x + 0.5f, y + 0.5f};
     Inverse.convertPoint(Point);
 
-    float t = Utility::floor_clamp(Point.fX);
+    float t = Utility::clamp(0.0f, Point.fX, 1.0f );
+    //float t = Utility::floor_clamp(Point.fX);
 
     Color.fA = Utility::lerp(c0.fA, c1.fA, t);
     Color.fR = Utility::lerp(c0.fR, c1.fR, t);

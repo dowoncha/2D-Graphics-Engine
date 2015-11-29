@@ -142,6 +142,29 @@ public:
     return *this;
   }
 
+  GMatrix<T> twoRowInverse() const
+  {
+    T det = Matrix[0] * Matrix[4] - Matrix[1] * Matrix[3];
+	 
+	  if (det == T(0.0))
+	  {
+		  printf("Matrix is not invertible\n");
+		  return GMatrix<T>();
+	  }
+	 
+	  std::array<T, 9> Inverse {{
+		  Matrix[4], -Matrix[1], Matrix[1] * Matrix[5] - Matrix[4] * Matrix[2],
+      -Matrix[3], Matrix[0], Matrix[3] * Matrix[2] - Matrix[0] * Matrix[5],
+      0 , 0, 1
+	  }};
+    
+    for (auto& Element: Inverse) {
+      Element /= det;
+    }
+    
+    return GMatrix<T>(Inverse);
+  }
+  
   GMatrix<T> inverse() const  //Calculate the inverse of the matrix and return the new matrix
   {
     const T& a11 = Matrix[0], a12 = Matrix[1], a13 = Matrix[2];

@@ -5,15 +5,15 @@
 GEdge::GEdge(const GPoint& p1, const GPoint& p2)
 {
   /* Whichever has the higher y value becomes the top point */
-  const GPoint& TopPoint = (p1.y() < p2.y()) ? p1 : p2;  
-  const GPoint& BotPoint = (p1.y() < p2.y()) ? p2 : p1;
+  const GPoint& TopPoint = (p1.fY < p2.fY) ? p1 : p2;  
+  const GPoint& BotPoint = (p1.fY < p2.fY) ? p2 : p1;
 
   /* Get the slope from unmodified values */
-  fSlope = (TopPoint.x() - BotPoint.x()) / (TopPoint.y() - BotPoint.y());
+  fSlope = (TopPoint.fX - BotPoint.fX) / (TopPoint.fY - BotPoint.fY);
 
   /* Find the rounded top and bottom values */
-  nTop = Utility::round(TopPoint.y());
-  nBottom = Utility::round(BotPoint.y());
+  nTop = Utility::round(TopPoint.fY);
+  nBottom = Utility::round(BotPoint.fY);
 
   /* Find the currentX value */
   fCurrentX = TopPoint.x() + fSlope * (nTop + .5 - TopPoint.y()) ;

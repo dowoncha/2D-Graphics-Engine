@@ -63,17 +63,31 @@ inline uint8_t floatToByte(float i)
   return (uint8_t)(isx & 0xff);
 }
 
-GPoint unitVector(const GPoint& A, const GPoint& B);
+inline GPoint& operator*=(GPoint& A, float Scalar)
+{
+  A.fX *= Scalar;
+  A.fY *= Scalar;
+  return A;
+}
+
+inline float DotProduct(const GPoint& A, const GPoint& B)
+{
+  return A.fX * B.fX + A.fY * B.fY;
+}
+
+GPoint UnitVector(const GPoint& A, const GPoint& B);
 
 inline GPoint operator+(const GPoint& A, const GPoint& B)
 {
   return GPoint{A.fX + B.fX, A.fY + B.fY};
 }
+using Utility::operator+;
 
 inline GPoint operator-(const GPoint& A, const GPoint& B)
 {
   return GPoint{A.fX - B.fX, A.fY - B.fY};
 }
+using Utility::operator-;
 
 GPixel ColorToPixel(const GColor& color);
 

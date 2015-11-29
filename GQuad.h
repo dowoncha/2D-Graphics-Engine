@@ -22,8 +22,8 @@ public:
   static GQuad Make(const GPoint& A, const GPoint& B, float width)
   {
     // Make AB vector of length half the width. Then use AB vector to make AB perpendicular
-    GPoint AB = Utility::unitVector(A, B);
-    float rad = width / 2;
+    GPoint AB = Utility::UnitVector(A, B);
+    float rad = width / 2.0f;
     AB.fX *= rad;
     AB.fY *= rad;
     GPoint ABT = GPoint::Make(-AB.fY, AB.fX);
@@ -42,5 +42,9 @@ public:
     Points.emplace_back(GPoint{B.fX - ABT.fX, B.fY - ABT.fY});
 
     return Points;
+  }
+    
+  void print() const {
+    printf("GQuad A: %f %f, B: %f %f, ABT: %f %f\n", A.fX, A.fY, B.fX, B.fY, ABT.fX, ABT.fY);
   }
 };
