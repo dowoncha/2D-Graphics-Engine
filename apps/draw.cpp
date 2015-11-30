@@ -70,8 +70,8 @@ static bool in_resize_corner(const GRect& r, float x, float y, GPoint* anchor) {
 }
 
 static void draw_corner(GCanvas* canvas, const GColor& c, float x, float y, float dx, float dy) {
-    canvas->fillRect(make_from_pts(GPoint::Make(x, y - 1), GPoint::Make(x + dx, y + 1)), c);
-    canvas->fillRect(make_from_pts(GPoint::Make(x - 1, y), GPoint::Make(x + 1, y + dy)), c);
+  //canvas->fillRect(make_from_pts(GPoint::Make(x, y - 1), GPoint::Make(x + dx, y + 1)), c);
+  //canvas->fillRect(make_from_pts(GPoint::Make(x - 1, y), GPoint::Make(x + 1, y + dy)), c);
 }
 
 class Shape {

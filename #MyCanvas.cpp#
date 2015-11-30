@@ -435,8 +435,8 @@ void MyCanvas::SortPointsForConvex(std::vector<GPoint>& Points)
 {
   /* Sort Points by y and then x if they are equal */
   std::sort(Points.begin(), Points.end(), [](const GPoint& a, const GPoint& b) -> bool  {
-      return std::tie(a.fY, b.fX) < std::tie(b.fY, a.fX);
-      //return ( std::fabs(a.fY - b.fY) < .001) ? a.fX > b.fX : a.fY < b.fY;
+      //return std::tie(a.fY, b.fX) < std::tie(b.fY, a.fX);
+      return ( std::fabs(a.fY - b.fY) < .000001) ? a.fX > b.fX : a.fY < b.fY;
   });
 
   std::queue<GPoint> RightPoints;  //Hold all points right of the pivot

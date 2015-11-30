@@ -768,25 +768,25 @@ static void draw_stroke_rings(GCanvas* canvas) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 const CS575DrawRec gDrawRecs[] = {
-    { draw_solid_ramp,  256 * RAMP_W, 7*RAMP_H, 1, "solid_ramp"    },
-    { draw_blend_white, 200, 200,               1, "blend_white"   },
-    { draw_blend_black, 200, 200,               1, "blend_black"   },
+  { draw_solid_ramp,  256 * RAMP_W, 7*RAMP_H, 1, "solid_ramp"    },
+  { draw_blend_white, 200, 200,               1, "blend_white"   },
+  { draw_blend_black, 200, 200,               1, "blend_black"   },
 
-    { draw_spocks_quad, 300, 300,               2, "spocks_quad"   },
-    { draw_spocks_zoom, 300, 300,               2, "spocks_zoom"   },
-    { draw_bm_circles,  300, 300,               2, "circles_blend" },
-    { draw_circle_big,  400, 300,               2, "circles_fat"   },
+  { draw_spocks_quad, 300, 300,               2, "spocks_quad"   },
+  { draw_spocks_zoom, 300, 300,               2, "spocks_zoom"   },
+  { draw_bm_circles,  300, 300,               2, "circles_blend" },
+  { draw_circle_big,  400, 300,               2, "circles_fat"   },
 
-    { draw_tri,         256, 256,               3, "tri"           },
-    { draw_tri_clipped, 256, 256,               3, "tri_clipped"   },
-    { draw_poly,        512, 512,               3, "poly"          },
-    { draw_poly_center, 256, 256,               3, "poly_center"   },
-    { draw_poly_rotate, 230, 230,               3, "poly_rotate"   },
+  { draw_tri,         256, 256,               3, "tri"           },
+  { draw_tri_clipped, 256, 256,               3, "tri_clipped"   },
+  { draw_poly,        512, 512,               3, "poly"          },
+  { draw_poly_center, 256, 256,               3, "poly_center"   },
+  { draw_poly_rotate, 230, 230,               3, "poly_rotate"   },
 
-    { draw_concat_scale,        DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_scale" },
-    { draw_concat_scale_bitmap, DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_scale_bitmap" },
-    { draw_concat_rotate,       DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_rotate" },
-    { draw_concat_rotate_bitmap,DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_rotate_bitmap" },
+  { draw_concat_scale,        DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_scale" },
+  { draw_concat_scale_bitmap, DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_scale_bitmap" },
+  { draw_concat_rotate,       DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_rotate" },
+  { draw_concat_rotate_bitmap,DRAW_CONCAT_W, DRAW_CONCAT_H, 4, "draw_concat_rotate_bitmap" },
 
     { draw_grad_insets, 400, 400,               5, "gradient_insets" },
     { draw_grad_insets_rot, 400, 400,           5, "gradient_insets_rot" },

@@ -48,7 +48,7 @@ bool GEdge::pinTopAndBot(int Height)
     nBottom = Height;
   }
 
-  if (std::isinf(fSlope) || std::isnan(fSlope))
+  if (std::isinf(fSlope) || std::isnan(fSlope) || nTop == nBottom)
   {
     return false;
   }
