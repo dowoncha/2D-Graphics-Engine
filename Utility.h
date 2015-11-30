@@ -48,8 +48,8 @@ inline float floor_clamp(float value)
 }
 
 template <typename T>
-inline T lerp(T v0, T v1, T t) {
-    return (1 - t) * v0 + t * v1;
+inline T lerp(T v0, T v1, float t) {
+    return (1.0f - t) * v0 + t * v1;
 }
 
 inline int round(float a)
@@ -81,13 +81,13 @@ inline GPoint operator+(const GPoint& A, const GPoint& B)
 {
   return GPoint{A.fX + B.fX, A.fY + B.fY};
 }
-using Utility::operator+;
+//using Utility::operator+;
 
 inline GPoint operator-(const GPoint& A, const GPoint& B)
 {
   return GPoint{A.fX - B.fX, A.fY - B.fY};
 }
-using Utility::operator-;
+//using Utility::operator-;
 
 GPixel ColorToPixel(const GColor& color);
 
