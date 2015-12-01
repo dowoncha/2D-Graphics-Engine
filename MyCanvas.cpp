@@ -191,16 +191,21 @@ void MyCanvas::strokePolygon(const GPoint points[], int n, bool isClosed, const 
     CTMPoints(Joint);
     auto Edges = pointsToEdges(Joint);
     shadeDevicePolygon(Edges, shader);
-  }  
+  }
+
+  if (isClosed)
+  {
+    auto Joint = calculateJoint(Shells.back(), Shells.front(), stroke);
+
+    CTMPoints(Joint);
+    auto Edges = pointsToEdges(Joint);
+    shadeDevicePolygon(Edges, shader);
+  }
 }
 
 std::vector<GPoint> MyCanvas::calculateJoint(const GQuad& line1, const GQuad& line2, const Stroke& stroke) const
 {   
-    printf("Calculating Joint\n");
-    line1.print();
-    line2.print();
-
-    if (line1.B.fX != line2.A.fX && line1.B.fY != line2.A.fY) 
+  if (line1.B.fX != line2.A.fX && line1.B.fY != line2.A.fY) 
     {
       printf("Line 1 B and Line 2 A is not the same pivot point\n");
       return std::vector<GPoint>();
@@ -213,13 +218,19 @@ std::vector<GPoint> MyCanvas::calculateJoint(const GQuad& line1, const GQuad& li
     /* Calculate angle between lines to determine if we miter or bevel the joint*/
     GPoint U = Utility::UnitVector(line1.B, line1.A);
     GPoint V = Utility::UnitVector(line2.A, line2.B);
-    float UdotV = Utility::DotProduct(U, V);
-    float h = std::sqrt(2.0f / (1.0f - UdotV));
+    float costheta = Utility::DotProduct(U, V);
+    float sintheta = Utility::CrossProduct(U, V);
+    float h = std::sqrt(2.0f / (1.0f - costheta));
+    float hsin = std::sqrt(2.0f / (1.0f - sintheta));
+
+    printf("New Joint, Miter: %f\n", stroke.fMiterLimit);
+    printf("U: %f %f, V: %f %f\n", U.fX, U.fY, V.fX, V.fY);
+    printf("Cos 0: %f, H: %f, Sin 0: %f, H: %f\n", costheta, h, sintheta, hsin);
 
     /* Both Joints share 3 common points, calculate and add to polygon vector*/
     const GPoint& joint = line1.B;
-    const GPoint& BQ = line1.ABT;
-    const GPoint& BR = line2.ABT;
+    const GPoint& BQ = {-line1.ABT.fX, -line1.ABT.fY};
+    const GPoint& BR = {-line2.ABT.fX, -line2.ABT.fY};
     
     Poly.push_back(joint);
     Poly.push_back(joint + BQ);
@@ -228,12 +239,20 @@ std::vector<GPoint> MyCanvas::calculateJoint(const GQuad& line1, const GQuad& li
     /* If angle between AB and BC is less than the miter limit then its a miter joint so we add P = B + BP*/
     if ( h <= stroke.fMiterLimit) 
     {
-      GPoint BP = Utility::UnitVector(joint, BR + BQ);
+      GPoint BP = Utility::UnitVector(BR, BQ);
       float BPlength = stroke.fWidth / 2.0f * h;
       BP *= BPlength;
+
+      GPoint P {joint.fX + BP.fX, joint.fY - BP.fY};
       
-      Poly.push_back(joint + BP);
+      Poly.push_back(P);
     }
+
+    printf("Created Joint\n");
+    for (auto Point : Poly)
+      {
+	printf("Point %f %f\n", Point.fX, Point.fY);
+      }
     
     return Poly;  
 }
@@ -281,12 +300,6 @@ void MyCanvas::shadeDevicePolygon(std::vector<GEdge>& Edges, GShader* shader)
 
   // Sort the edges from top to bottom, left to right
   std::sort(Edges.begin(), Edges.end());
-
-  printf("\nNew Set Of Edges\n");
-  for (auto Edge: Edges)
-    {
-      Edge.print();
-    }
 
   // The first two edges will be the top most edges
   GEdge LeftEdge = Edges[0];
@@ -407,20 +420,7 @@ void MyCanvas::CTMPoints(std::vector<GPoint>& Points) const
 
 std::vector<GEdge> MyCanvas::pointsToEdges(std::vector<GPoint>& Points)
 {
-  printf("\nConverting points pre-sort\n");
-  for (auto Point : Points)
-    {
-      printf("Point: %f %f\n", Point.fX, Point.fY);
-    }
-  
   SortPointsForConvex(Points);          //Sort the points into an order we can make edges with
-
-  printf("\nConverting points post-sort\n");
-  for (auto Point: Points)
-    {
-      printf("Post Point: %f %f\n", Point.fX, Point.fY);
-
-    }
   
   auto Edges = MakeConvexEdges(Points); //Make edges out of the sorted points
 

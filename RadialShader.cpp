@@ -34,8 +34,8 @@ void RadialShader::shadeRow(int x, int y, int count, GPixel row[])
 
     float t = std::sqrt(Point.fX * Point.fX + Point.fY * Point.fY);
 
-    t = Utility::floor_clamp(t);
-
+    //t = Utility::floor_clamp(t);
+    t = Utility::clamp(0.0f, t, 1.0f);
     Color.fA = Utility::lerp(c0.fA, c1.fA, t);
     Color.fR = Utility::lerp(c0.fR, c1.fR, t);
     Color.fG = Utility::lerp(c0.fG, c1.fG, t);

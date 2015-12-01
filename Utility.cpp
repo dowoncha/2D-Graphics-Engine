@@ -2,7 +2,7 @@
 
 namespace Utility
 {
-
+  
 GPoint UnitVector(const GPoint& A, const GPoint& B)
 {
   GPoint AB = B - A;

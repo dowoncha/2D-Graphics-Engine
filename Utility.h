@@ -75,6 +75,11 @@ inline float DotProduct(const GPoint& A, const GPoint& B)
   return A.fX * B.fX + A.fY * B.fY;
 }
 
+inline float CrossProduct(const GPoint& A, const GPoint& B)
+{
+  return A.fX * B.fY - A.fY * B.fX;
+}
+ 
 GPoint UnitVector(const GPoint& A, const GPoint& B);
 
 inline GPoint operator+(const GPoint& A, const GPoint& B)
